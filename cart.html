@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কার্ট — কাচাবাজার</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--gray-50); }
+    
+    .page-header {
+      background: #fff;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--gray-200);
+      margin-bottom: 32px;
+    }
+    .page-header h1 { font-size: 24px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: 10px; }
+    
+    .cart-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 30px;
+      align-items: start;
+      padding-bottom: 60px;
+    }
+
+    .cart-items-box {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+    }
+    .cart-item-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .cart-item-row:last-child { border-bottom: none; }
+    .cart-item-img {
+      width: 90px;
+      height: 90px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--gray-200);
+    }
+    .cart-item-info { flex: 1; }
+    .cart-item-info h3 { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+    .cart-item-info .unit { font-size: 13px; color: var(--gray-500); margin-bottom: 8px; }
+    .cart-item-info .price { font-size: 16px; font-weight: 700; color: var(--green-700); }
+
+    .cart-item-qty {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .cart-item-qty button {
+      width: 34px;
+      height: 36px;
+      font-size: 18px;
+      color: var(--gray-600);
+      transition: background 0.2s;
+    }
+    .cart-item-qty button:hover { background: var(--gray-100); }
+    .cart-item-qty input {
+      width: 44px;
+      height: 36px;
+      text-align: center;
+      border: none;
+      border-left: 1px solid var(--gray-200);
+      border-right: 1px solid var(--gray-200);
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+    }
+    
+    .cart-item-subtotal {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-900);
+      min-width: 90px;
+      text-align: right;
+    }
+    
+    .remove-btn {
+      color: var(--gray-400);
+      background: var(--gray-50);
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .remove-btn:hover { background: #fee2e2; color: var(--red-500); }
+
+    .summary-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      position: sticky;
+      top: 100px;
+    }
+    .summary-box h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; }
+    
+    .summary-line { display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; color: var(--gray-700); }
+    .summary-line.total { border-top: 1px solid var(--gray-200); margin-top: 10px; padding-top: 14px; font-size: 20px; font-weight: 700; color: var(--green-700); }
+    
+    .free-delivery-hint {
+      background: var(--green-50);
+      color: var(--green-700);
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .empty-cart {
+      background: #fff;
+      border-radius: 12px;
+      padding: 80px 20px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+    }
+    .empty-cart i { font-size: 64px; color: var(--gray-300); margin-bottom: 20px; }
+
+    @media(max-width: 900px) {
+      .cart-layout { grid-template-columns: 1fr; gap: 20px; }
+      .summary-box { position: static; order: 2; }
+      .cart-items-box { order: 1; }
+    }
+    @media(max-width: 600px) {
+      .cart-item-row { flex-wrap: wrap; gap: 12px; }
+      .cart-item-img { width: 70px; height: 70px; }
+      .cart-item-info { width: calc(100% - 90px); }
+      .cart-item-qty { margin-top: 10px; }
+      .cart-item-subtotal { flex: 1; text-align: right; margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-header">
+  <div class="container">
+    <h1><i class="fa-solid fa-cart-shopping" style="color:var(--green-600)"></i> আমার কার্ট</h1>
+  </div>
+</div>
+
+<div class="container">
+  <div class="cart-layout" id="cartArea">
+    <!-- JS will populate -->
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/main.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', renderCart);
+
+  async function renderCart() {
+    const area = document.getElementById('cartArea');
+    if (!area) return;
+
+    const items = Cart.get();
+
+    // ১. কার্ট খালি
+    if (!items.length) {
+      area.innerHTML = `
+        <div class="empty-cart" style="grid-column: 1 / -1;">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <h2 style="font-size:22px; margin-bottom:10px;">আপনার কার্ট খালি</h2>
+          <p style="color:var(--gray-500); margin-bottom:24px;">কিছু তাজা পাহাড়ি সবজি ও মধু যোগ করুন!</p>
+          <a href="shop.html" class="btn btn-primary" style="padding:12px 30px;">শপে ফিরে যান</a>
+        </div>`;
+      return;
+    }
+
+    // ২. লোডিং স্টেট
+    area.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray-500)">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size:24px"></i>
+      <p style="margin-top:10px">কার্ট লোড হচ্ছে...</p>
+    </div>`;
+
+    // ৩. API থেকে পণ্য লোড (fallback: data.js PRODUCTS)
+    let allProducts = [];
+    try {
+      allProducts = await loadProducts();
+    } catch (e) {
+      console.error('Product load error:', e);
+      allProducts = PRODUCTS;
+    }
+
+    // ৪. কার্ট আইটেম ডিটেইল
+    const detailed = items.map(i => {
+      const p = allProducts.find(x => Number(x.id) === Number(i.id));
+      return p ? { ...p, qty: i.qty } : null;
+    }).filter(Boolean);
+
+    if (!detailed.length) {
+      area.innerHTML = `
+        <div class="empty-cart" style="grid-column: 1 / -1;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <h2 style="font-size:22px; margin-bottom:10px;">পণ্য পাওয়া যায়নি</h2>
+          <p style="color:var(--gray-500); margin-bottom:24px;">কার্টে থাকা পণ্যগুলো এখন আর পাওয়া যাচ্ছে না।</p>
+          <button class="btn btn-primary" onclick="Cart.clear(); location.reload();">কার্ট খালি করুন</button>
+        </div>`;
+      return;
+    }
+
+    // ৫. ক্যালকুলেশন
+    const subtotal = detailed.reduce((s, i) => s + i.price * i.qty, 0);
+    const delivery = subtotal > 500 ? 0 : 40;
+    const total = subtotal + delivery;
+
+    // ৬. রেন্ডার
+    area.innerHTML = `
+      <div class="cart-items-box">
+        ${detailed.map(p => `
+          <div class="cart-item-row">
+            <img src="${p.img}" alt="${p.name}" class="cart-item-img">
+            
+            <div class="cart-item-info">
+              <h3>${p.name}</h3>
+              <div class="unit">প্রতি ${p.unit}</div>
+              <div class="price">${formatTk(p.price)}</div>
+            </div>
+            
+            <div class="cart-item-qty">
+              <button onclick="setQty(${p.id}, ${p.qty-1})">−</button>
+              <input value="${p.qty}" readonly>
+              <button onclick="setQty(${p.id}, ${p.qty+1})">+</button>
+            </div>
+            
+            <div class="cart-item-subtotal">
+              ${formatTk(p.price * p.qty)}
+            </div>
+            
+            <button class="remove-btn" onclick="removeItem(${p.id})" title="ডিলিট করুন">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="summary-box">
+        <h2>অর্ডার সামারি</h2>
+        
+        <div class="summary-line">
+          <span>সাবটোটাল (${detailed.length}টি পণ্য)</span>
+          <span>${formatTk(subtotal)}</span>
+        </div>
+        <div class="summary-line">
+          <span>ডেলিভারি চার্জ</span>
+          <span>${delivery === 0 ? '<span style="color:var(--green-600);font-weight:600">ফ্রি</span>' : formatTk(delivery)}</span>
+        </div>
+        
+        ${subtotal < 500 ? `
+          <div class="free-delivery-hint">
+            <i class="fa-solid fa-truck-fast"></i>
+            <span>আরো <strong>${formatTk(500 - subtotal)}</strong> কিনলে ফ্রি ডেলিভারি!</span>
+          </div>
+        ` : ''}
+
+        <div class="summary-line total">
+          <span>সর্বমোট</span>
+          <span>${formatTk(total)}</span>
+        </div>
+        
+        <a href="checkout.html" class="btn btn-primary" style="width:100%; justify-content:center; padding: 14px; margin-top:16px; font-size:15px;">
+          <i class="fa-solid fa-arrow-right"></i> চেকআউট করুন
+        </a>
+        <a href="shop.html" style="display:block; text-align:center; margin-top:14px; font-size:14px; color:var(--gray-500); text-decoration:underline;">
+          আরও পণ্য কিনুন
+        </a>
+      </div>
+    `;
+  }
+
+  function setQty(id, qty) {
+    if (qty < 1) return removeItem(id);
+    Cart.setQty(id, qty);
+    renderCart();
+  }
+
+  function removeItem(id) {
+    Cart.remove(id);
+    renderCart();
+    showToast('পণ্য কার্ট থেকে সরানো হয়েছে', 'error');
+  }
+</script>
+<script src="js/pwa-init.js"></script>
+</body>
+</html>
