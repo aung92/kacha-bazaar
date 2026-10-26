@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>সাবস্ক্রিপশন — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="সাবস্ক্রিপশন">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🔄 সাবস্ক্রিপশন / রিকারিং অর্ডার</h1>
+        <button class="btn btn-primary" onclick="openSubModal()"><i class="fa-solid fa-plus"></i> নতুন প্ল্যান</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>সাবস্ক্রিপশন প্ল্যান</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>প্ল্যান নাম</th><th>পণ্য</th><th>দাম</th><th>ফ্রিকোয়েন্সি</th><th>সাবস্ক্রাইবার</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="subBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="subModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head"><h3 id="modalTitle">নতুন প্ল্যান</h3><button class="close-modal" onclick="closeModal('subModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="subId">
+      <div class="form-row single"><div class="form-group"><label>প্ল্যান নাম <span class="req">*</span></label><input type="text" id="subName" placeholder="যেমন: মাসিক সবজি প্যাক"></div></div>
+      <div class="form-row single"><div class="form-group"><label>পণ্য</label><input type="text" id="subItems" placeholder="টমেটো, আলু, শসা"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label>দাম (৳) <span class="req">*</span></label><input type="number" id="subPrice" min="0" value="500"></div>
+        <div class="form-group"><label>ফ্রিকোয়েন্সি</label>
+          <select id="subFreq"><option value="weekly">সাপ্তাহিক</option><option value="biweekly">পাক্ষিক</option><option value="monthly">মাসিক</option></select>
+        </div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="subActive" checked style="width:auto;accent-color:var(--green-600)"><span>সক্রিয়</span></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('subModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveSub()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_SUBS = [
+    { id: 1, name: 'মাসিক সবজি প্যাক', items: 'টমেটো, আলু, শসা', price: 500, freq: 'monthly', subscribers: 12, active: true },
+    { id: 2, name: 'সাপ্তাহিক মধু প্যাক', items: 'পাহাড়ি মধু', price: 850, freq: 'weekly', subscribers: 5, active: true }
+  ];
+
+  function getSubs() { return AdminStore.get('subscriptions', DEFAULT_SUBS); }
+  function saveSubs(l) { AdminStore.set('subscriptions', l); }
+
+  function render() {
+    const freqLabel = { weekly: 'সাপ্তাহিক', biweekly: 'পাক্ষিক', monthly: 'মাসিক' };
+    document.getElementById('subBody').innerHTML = getSubs().map(s => `
+      <tr>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.items || '—'}</td>
+        <td>${formatTk(s.price)}</td>
+        <td>${freqLabel[s.freq] || s.freq}</td>
+        <td><span class="badge badge-active">${s.subscribers || 0} জন</span></td>
+        <td><span class="badge ${s.active ? 'badge-active' : 'badge-inactive'}">${s.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+        <td class="actions">
+          <button onclick="editSub(${s.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteSub(${s.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো প্ল্যান নেই</td></tr>';
+  }
+
+  function openSubModal() {
+    document.getElementById('subId').value = '';
+    ['subName','subItems'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('subPrice').value = 500;
+    document.getElementById('subFreq').value = 'monthly';
+    document.getElementById('subActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন প্ল্যান';
+    document.getElementById('subModal').classList.add('show');
+  }
+
+  function editSub(id) {
+    const s = getSubs().find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('subId').value = s.id;
+    document.getElementById('subName').value = s.name;
+    document.getElementById('subItems').value = s.items || '';
+    document.getElementById('subPrice').value = s.price;
+    document.getElementById('subFreq').value = s.freq;
+    document.getElementById('subActive').checked = s.active;
+    document.getElementById('modalTitle').textContent = 'এডিট প্ল্যান';
+    document.getElementById('subModal').classList.add('show');
+  }
+
+  function saveSub() {
+    const id = document.getElementById('subId').value;
+    const name = document.getElementById('subName').value.trim();
+    if (!name) { showToast('নাম দিন', 'error'); return; }
+    const data = {
+      name,
+      items: document.getElementById('subItems').value.trim(),
+      price: +document.getElementById('subPrice').value || 0,
+      freq: document.getElementById('subFreq').value,
+      active: document.getElementById('subActive').checked
+    };
+    const list = getSubs();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data, subscribers: 0 });
+    }
+    saveSubs(list);
+    closeModal('subModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteSub(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveSubs(getSubs().filter(s => s.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

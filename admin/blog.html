@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ব্লগ / কনটেন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="ব্লগ / কনটেন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📝 ব্লগ / কনটেন্ট</h1>
+        <button class="btn btn-primary" onclick="openBlogModal()"><i class="fa-solid fa-plus"></i> নতুন পোস্ট</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>শিরোনাম</th><th>টাইপ</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="blogBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="blogModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন পোস্ট</h3>
+      <button class="close-modal" onclick="closeModal('blogModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="blogId">
+      <div class="form-row">
+        <div class="form-group"><label>টাইপ</label>
+          <select id="blogType"><option value="blog">ব্লগ পোস্ট</option><option value="page">পেজ</option></select>
+        </div>
+        <div class="form-group"><label>স্ট্যাটাস</label>
+          <select id="blogStatus"><option value="draft">ড্রাফট</option><option value="published">প্রকাশিত</option></select>
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>শিরোনাম <span class="req">*</span></label><input type="text" id="blogTitle"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>স্লাগ</label><input type="text" id="blogSlug" placeholder="url-friendly-name"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>কনটেন্ট <span class="req">*</span></label><textarea id="blogContent" rows="8" placeholder="HTML বা প্লেইন টেক্সট..."></textarea></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>ফিচার্ড ইমেজ URL</label><input type="url" id="blogImage"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('blogModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveBlog()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_BLOGS = [
+    { id: 1, title: 'Privacy Policy', type: 'page', slug: 'privacy-policy', content: 'আমাদের প্রাইভেসি পলিসি...', image: '', status: 'published', date: '2025-01-15' },
+    { id: 2, title: 'Terms & Conditions', type: 'page', slug: 'terms', content: 'শর্তাবলী...', image: '', status: 'published', date: '2025-01-15' },
+    { id: 3, title: 'পাহাড়ি মধুর উপকারিতা', type: 'blog', slug: 'honey-benefits', content: 'মধু অনেক উপকারী...', image: '', status: 'draft', date: '2025-01-20' }
+  ];
+
+  function getBlogs() { return AdminStore.get('blogs', DEFAULT_BLOGS); }
+  function saveBlogs(l) { AdminStore.set('blogs', l); }
+
+  function render() {
+    document.getElementById('blogBody').innerHTML = getBlogs().map(b => `
+      <tr>
+        <td><strong>${b.title}</strong><br><small style="color:var(--gray-500)">${b.slug}</small></td>
+        <td>${b.type === 'page' ? '📄 পেজ' : '📝 ব্লগ'}</td>
+        <td><span class="badge ${b.status === 'published' ? 'badge-active' : 'badge-inactive'}">${b.status === 'published' ? 'প্রকাশিত' : 'ড্রাফট'}</span></td>
+        <td>${formatDate(b.date)}</td>
+        <td class="actions">
+          <button onclick="editBlog(${b.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteBlog(${b.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো পোস্ট নেই</td></tr>';
+  }
+
+  function openBlogModal() {
+    ['blogId','blogTitle','blogSlug','blogContent','blogImage'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('blogType').value = 'blog';
+    document.getElementById('blogStatus').value = 'draft';
+    document.getElementById('modalTitle').textContent = 'নতুন পোস্ট';
+    document.getElementById('blogModal').classList.add('show');
+  }
+
+  function editBlog(id) {
+    const b = getBlogs().find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('blogId').value = b.id;
+    document.getElementById('blogTitle').value = b.title;
+    document.getElementById('blogSlug').value = b.slug;
+    document.getElementById('blogContent').value = b.content;
+    document.getElementById('blogImage').value = b.image || '';
+    document.getElementById('blogType').value = b.type;
+    document.getElementById('blogStatus').value = b.status;
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + b.title;
+    document.getElementById('blogModal').classList.add('show');
+  }
+
+  function saveBlog() {
+    const id = document.getElementById('blogId').value;
+    const title = document.getElementById('blogTitle').value.trim();
+    const content = document.getElementById('blogContent').value.trim();
+    if (!title || !content) { showToast('শিরোনাম ও কনটেন্ট দিন', 'error'); return; }
+    let slug = document.getElementById('blogSlug').value.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const data = {
+      title, content, slug,
+      type: document.getElementById('blogType').value,
+      status: document.getElementById('blogStatus').value,
+      image: document.getElementById('blogImage').value.trim()
+    };
+    const list = getBlogs();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.unshift({ id: Date.now(), ...data, date: new Date().toISOString().split('T')[0] });
+    }
+    saveBlogs(list);
+    closeModal('blogModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteBlog(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveBlogs(getBlogs().filter(b => b.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

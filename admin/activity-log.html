@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>অ্যাক্টিভিটি লগ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="অ্যাক্টিভিটি লগ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📋 অ্যাডমিন অ্যাক্টিভিটি লগ</h1>
+        <button class="btn btn-outline" onclick="clearLog()"><i class="fa-solid fa-trash"></i> সব মুছুন</button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 কী করেছেন বা কী বদলেছেন...">
+        <select id="filterType">
+          <option value="">সব ধরন</option>
+          <option value="product">পণ্য</option>
+          <option value="order">অর্ডার</option>
+          <option value="customer">কাস্টমার</option>
+          <option value="settings">সেটিংস</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>সময়</th><th>অ্যাডমিন</th><th>কাজ</th><th>বিস্তারিত</th></tr></thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_LOGS = [
+    { id: 1, time: '2025-01-21T10:30:00', admin: 'Admin', type: 'product', action: 'পণ্য এডিট', detail: 'দেশি টমেটো দাম ৳৬০ → ৳৬৫' },
+    { id: 2, time: '2025-01-21T09:15:00', admin: 'Admin', type: 'order', action: 'অর্ডার কনফার্ম', detail: '#KC100001' },
+    { id: 3, time: '2025-01-20T18:00:00', admin: 'Admin', type: 'settings', action: 'সেটিংস আপডেট', detail: 'ডেলিভারি চার্জ ৳৪০ → ৳৬০' }
+  ];
+
+  function getLogs() { return AdminStore.get('activity_log', DEFAULT_LOGS); }
+  function saveLogs(l) { AdminStore.set('activity_log', l); }
+
+  function render() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    const type = document.getElementById('filterType').value;
+    let list = getLogs();
+    if (search) list = list.filter(l => l.action.toLowerCase().includes(search) || l.detail.toLowerCase().includes(search));
+    if (type) list = list.filter(l => l.type === type);
+
+    const typeBadges = { product: 'badge-confirmed', order: 'badge-pending', customer: 'badge-packed', settings: 'badge-active' };
+
+    document.getElementById('logBody').innerHTML = list.map(l => `
+      <tr>
+        <td style="font-size:12px; color:var(--gray-500);">${new Date(l.time).toLocaleString('bn-BD')}</td>
+        <td><strong>${l.admin}</strong></td>
+        <td><span class="badge ${typeBadges[l.type] || 'badge-active'}">${l.action}</span></td>
+        <td>${l.detail}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো লগ নেই</td></tr>';
+  }
+
+  function clearLog() {
+    if (!confirm('সব লগ মুছে ফেলবেন?')) return;
+    saveLogs([]);
+    render();
+    showToast('সব লগ মুছে ফেলা হয়েছে', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('filterType').addEventListener('change', render);
+  });
+</script>
+</body>
+</html>

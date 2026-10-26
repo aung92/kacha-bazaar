@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ট্যাক্স / VAT — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* ✅ ট্যাক্স টগল সুইচ — সম্পূর্ণ CSS */
+    .tax-toggle {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .tax-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+    .tax-toggle .tax-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--gray-300);
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    .tax-toggle .tax-slider::before {
+      content: '';
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .tax-toggle input:checked + .tax-slider {
+      background: var(--green-600);
+    }
+    .tax-toggle input:checked + .tax-slider::before {
+      transform: translateX(22px);
+    }
+
+    .tax-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+    }
+    .tax-toggle-row .toggle-info strong {
+      display: block;
+      font-size: 14px;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+    .tax-toggle-row .toggle-info small {
+      display: block;
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .tax-toggle-row.disabled {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body data-title="ট্যাক্স / VAT">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>💰 ট্যাক্স / VAT</h1>
+        <button class="btn btn-primary" onclick="openTaxModal()">
+          <i class="fa-solid fa-plus"></i> নতুন ট্যাক্স
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="tax-toggle-row" id="taxToggleRow">
+            <div class="toggle-info">
+              <strong>ট্যাক্স চালু আছে?</strong>
+              <small>চেকআউটে VAT সেকশন দেখাবে</small>
+            </div>
+            <label class="tax-toggle">
+              <input type="checkbox" id="taxEnabled" onchange="toggleTax()">
+              <span class="tax-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ট্যাক্সের নাম</th>
+                  <th>হার</th>
+                  <th>টাইপ</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="taxBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="taxModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ট্যাক্স</h3>
+      <button class="close-modal" onclick="closeModal('taxModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="taxId">
+      <div class="form-row single">
+        <div class="form-group">
+          <label>নাম <span class="req">*</span></label>
+          <input type="text" id="taxName" placeholder="যেমন: VAT">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>হার (%) <span class="req">*</span></label>
+          <input type="number" id="taxRate" min="0" max="100" step="0.01" placeholder="15">
+        </div>
+        <div class="form-group">
+          <label>টাইপ</label>
+          <select id="taxType">
+            <option value="percent">শতাংশ</option>
+            <option value="flat">ফ্ল্যাট</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+        <input type="checkbox" id="taxActive" checked style="width:auto;accent-color:var(--green-600)">
+        <span>সক্রিয়</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('taxModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveTax()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_TAXES = [
+    { id: 1, name: 'VAT', rate: 15, type: 'percent', active: true },
+    { id: 2, name: 'Delivery VAT', rate: 5, type: 'percent', active: false }
+  ];
+
+  function getTaxes() {
+    return AdminStore.get('taxes', DEFAULT_TAXES);
+  }
+  function saveTaxes(l) {
+    AdminStore.set('taxes', l);
+  }
+  function getTaxEnabled() {
+    return AdminStore.get('tax_enabled', true);
+  }
+  function setTaxEnabled(v) {
+    AdminStore.set('tax_enabled', v);
+  }
+
+  function render() {
+    const enabled = getTaxEnabled();
+    document.getElementById('taxEnabled').checked = enabled;
+
+    // Toggle row disabled styling
+    const row = document.getElementById('taxToggleRow');
+    if (row) {
+      row.classList.toggle('disabled', !enabled);
+    }
+
+    // Render tax table
+    document.getElementById('taxBody').innerHTML = getTaxes().map(t => `
+      <tr>
+        <td><strong>${t.name}</strong></td>
+        <td>${t.type === 'percent' ? t.rate + '%' : formatTk(t.rate)}</td>
+        <td>${t.type === 'percent' ? 'শতাংশ' : 'ফ্ল্যাট'}</td>
+        <td>
+          <span class="badge ${t.active ? 'badge-active' : 'badge-inactive'}">
+            ${t.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+          </span>
+        </td>
+        <td class="actions">
+          <button onclick="editTax(${t.id})" title="এডিট">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="del" onclick="deleteTax(${t.id})" title="ডিলিট">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো ট্যাক্স নেই</td></tr>';
+  }
+
+  function toggleTax() {
+    const v = document.getElementById('taxEnabled').checked;
+    setTaxEnabled(v);
+    render();
+    showToast(v ? 'ট্যাক্স চালু ✅' : 'ট্যাক্স বন্ধ', v ? 'success' : 'error');
+  }
+
+  function openTaxModal() {
+    document.getElementById('taxId').value = '';
+    document.getElementById('taxName').value = '';
+    document.getElementById('taxRate').value = '';
+    document.getElementById('taxType').value = 'percent';
+    document.getElementById('taxActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন ট্যাক্স';
+    document.getElementById('taxModal').classList.add('show');
+  }
+
+  function editTax(id) {
+    const t = getTaxes().find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('taxId').value = t.id;
+    document.getElementById('taxName').value = t.name;
+    document.getElementById('taxRate').value = t.rate;
+    document.getElementById('taxType').value = t.type;
+    document.getElementById('taxActive').checked = t.active;
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + t.name;
+    document.getElementById('taxModal').classList.add('show');
+  }
+
+  function saveTax() {
+    const id = document.getElementById('taxId').value;
+    const name = document.getElementById('taxName').value.trim();
+    const rate = +document.getElementById('taxRate').value;
+    if (!name || !rate) {
+      showToast('নাম ও হার দিন', 'error');
+      return;
+    }
+    const data = {
+      name,
+      rate,
+      type: document.getElementById('taxType').value,
+      active: document.getElementById('taxActive').checked
+    };
+    const list = getTaxes();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data });
+    }
+    saveTaxes(list);
+    closeModal('taxModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteTax(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveTaxes(getTaxes().filter(t => t.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  render();
+</script>
+</body>
+</html>

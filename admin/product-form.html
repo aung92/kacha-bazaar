@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>পণ্য যোগ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="পণ্য যোগ/এডিট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1 id="pageTitle">➕ নতুন পণ্য যোগ করুন</h1>
+        <a href="products.html" class="btn btn-outline">
+          <i class="fa-solid fa-arrow-left"></i> ফিরে যান
+        </a>
+      </div>
+
+      <form id="productForm">
+        <!-- Basic Info -->
+        <div class="card">
+          <div class="card-head"><h2>মূল তথ্য</h2></div>
+          <div class="card-body">
+            <div class="form-row single">
+              <div class="form-group">
+                <label>পণ্যের নাম <span class="req">*</span></label>
+                <input type="text" id="name" required placeholder="যেমন: পাহাড়ি মধু">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>ক্যাটাগরি <span class="req">*</span></label>
+                <select id="category" required></select>
+              </div>
+              <div class="form-group">
+                <label>জেলা <span class="req">*</span></label>
+                <select id="district" required></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>কৃষক</label>
+                <select id="farmer"></select>
+              </div>
+              <div class="form-group">
+                <label>একক <span class="req">*</span></label>
+                <input type="text" id="unit" required placeholder="কেজি / ডজন / ৫০০ গ্রাম">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="card">
+          <div class="card-head"><h2>মূল্য</h2></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>বর্তমান দাম (৳) <span class="req">*</span></label>
+                <input type="number" id="price" required min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label>পুরনো দাম (৳)</label>
+                <input type="number" id="oldPrice" min="0" step="1">
+                <small>না থাকলে ফাঁকা রাখুন</small>
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label>ডিসকাউন্ট %</label>
+                <input type="number" id="discount" min="0" max="100" readonly style="background:var(--gray-50)">
+                <small>পুরনো দাম দিলে অটো হিসাব হবে</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock -->
+        <div class="card">
+          <div class="card-head"><h2>স্টক</h2></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>স্টক পরিমাণ <span class="req">*</span></label>
+                <input type="number" id="stock" required min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label>রেটিং (0-5)</label>
+                <input type="number" id="rating" min="0" max="5" step="0.1" value="4.5">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image -->
+        <div class="card">
+          <div class="card-head"><h2>ছবি</h2></div>
+          <div class="card-body">
+            <div class="form-row single">
+              <div class="form-group">
+                <label>ছবি আপলোড করুন <span class="req">*</span></label>
+                
+                <!-- ফাইল আপলোড ইনপুট -->
+                <input type="file" id="imgFile" accept="image/*" style="padding: 10px; border: 1px dashed var(--gray-300); background: var(--gray-50); cursor: pointer;">
+                <small style="margin-bottom: 10px; display: block;">অথবা সরাসরি ইমেজ URL দিন</small>
+                
+                <!-- ইমেজ URL ইনপুট -->
+                <input type="url" id="img" placeholder="https://..." style="margin-bottom: 12px;">
+              </div>
+            </div>
+            
+            <!-- ইমেজ প্রিভিউ -->
+            <div id="imagePreview" style="margin-top:12px;text-align:center;display:none">
+              <img id="previewImg" style="max-width:200px; max-height: 200px; object-fit: cover; border-radius:10px; box-shadow:var(--shadow-sm)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="card">
+          <div class="card-head"><h2>স্ট্যাটাস</h2></div>
+          <div class="card-body">
+            <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+              <input type="checkbox" id="active" checked style="width:auto;accent-color:var(--green-600)">
+              <span>সক্রিয় (সাইটে দৃশ্যমান)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-save"></i> সেভ করুন
+          </button>
+          <a href="products.html" class="btn btn-secondary">বাতিল</a>
+          <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;margin-left:auto" onclick="deleteProduct()">
+            <i class="fa-solid fa-trash"></i> ডিলিট
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const CAT_LABELS = {
+    veg: 'সবজি', fruit: 'ফলমূল', fish: 'মাছ', meat: 'মাংস',
+    dairy: 'দুধ ও ডিম', spice: 'মসলা', honey: 'মধু', rice: 'চাল ও ডাল', organic: 'অর্গানিক'
+  };
+  const DIST_LABELS = {
+    rangamati: 'রাঙ্গামাটি',
+    khagrachari: 'খাগড়াছড়ি',
+    bandarban: 'বান্দরবান'
+  };
+  const FARMERS = [
+    { id: 'f1', name: 'করিম মিয়া' },
+    { id: 'f2', name: 'সুবল চাকমা' },
+    { id: 'f3', name: 'রতন ত্রিপুরা' },
+    { id: 'f4', name: 'মেমং মারমা' },
+    { id: 'f5', name: 'অংসুই প্রু' },
+    { id: 'f6', name: 'জুম্মন মিয়া' }
+  ];
+
+  const editId = new URLSearchParams(location.search).get('id');
+  const editing = !!editId;
+
+  // Populate selects
+  document.getElementById('category').innerHTML = Object.entries(CAT_LABELS)
+    .map(([id, n]) => `<option value="${id}">${n}</option>`).join('');
+  document.getElementById('district').innerHTML = Object.entries(DIST_LABELS)
+    .map(([id, n]) => `<option value="${id}">${n}</option>`).join('');
+  document.getElementById('farmer').innerHTML = `<option value="">— নির্বাচন করুন —</option>` +
+    FARMERS.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+
+  // Auto-discount
+  function updateDiscount() {
+    const p = +document.getElementById('price').value || 0;
+    const op = +document.getElementById('oldPrice').value || 0;
+    const disc = (p && op && op > p) ? Math.round((1 - p / op) * 100) : 0;
+    document.getElementById('discount').value = disc;
+  }
+  document.getElementById('price').addEventListener('input', updateDiscount);
+  document.getElementById('oldPrice').addEventListener('input', updateDiscount);
+
+    // ============================================
+  // Image Upload & Preview Logic
+  // ============================================
+  const imgUrlInput = document.getElementById('img');
+  const imgFileInput = document.getElementById('imgFile');
+  const imgPreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+
+  function showPreview(src) {
+    if (src) {
+      previewImg.src = src;
+      imgPreview.style.display = 'block';
+      previewImg.onerror = () => { imgPreview.style.display = 'none'; };
+    } else {
+      imgPreview.style.display = 'none';
+    }
+  }
+
+  // ১. URL ইনপুট চেঞ্জ হলে
+  imgUrlInput.addEventListener('input', e => {
+    const url = e.target.value.trim();
+    if (url) {
+      imgFileInput.value = ''; // ফাইল ইনপুট ক্লিয়ার করে দেবে
+      showPreview(url);
+    } else {
+      showPreview('');
+    }
+  });
+
+  // ২. ফাইল আপলোড হলে (Base64 কনভার্ট)
+  imgFileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ফাইলের সাইজ চেক (সর্বোচ্চ ৫০০ KB, কারণ localStorage-এ বেশি সাইজ ধরবে না)
+    if (file.size > 500 * 1024) {
+      showToast('ছবির সাইজ ৫০০ KB এর কম হতে হবে', 'error');
+      imgFileInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64String = event.target.result;
+      imgUrlInput.value = base64String; // URL ইনপুটে Base64 সেভ হবে
+      showPreview(base64String);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Load if editing
+  if (editing) {
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    const p = products.find(x => x.id === +editId);
+    if (!p) {
+      showToast('পণ্য পাওয়া যায়নি', 'error');
+      setTimeout(() => location.href = 'products.html', 900);
+    } else {
+      document.getElementById('pageTitle').textContent = '✏️ পণ্য এডিট: ' + p.name;
+      document.getElementById('name').value = p.name;
+      document.getElementById('category').value = p.category;
+      document.getElementById('district').value = p.district;
+      document.getElementById('farmer').value = p.farmer || '';
+      document.getElementById('unit').value = p.unit;
+      document.getElementById('price').value = p.price;
+      document.getElementById('oldPrice').value = p.oldPrice || '';
+      document.getElementById('stock').value = p.stock;
+      document.getElementById('rating').value = p.rating || 4.5;
+      document.getElementById('img').value = p.img;
+      // পুরনো ছবি থাকলে প্রিভিউ দেখাবে
+      if (p.img) showPreview(p.img);
+      document.getElementById('active').checked = p.active !== false;
+      document.getElementById('deleteBtn').style.display = 'inline-flex';
+      updateDiscount();
+      document.getElementById('img').dispatchEvent(new Event('input'));
+    }
+  }
+
+  // Save
+  document.getElementById('productForm').onsubmit = e => {
+    e.preventDefault();
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+
+    const data = {
+      name: document.getElementById('name').value.trim(),
+      category: document.getElementById('category').value,
+      district: document.getElementById('district').value,
+      farmer: document.getElementById('farmer').value,
+      unit: document.getElementById('unit').value.trim(),
+      price: +document.getElementById('price').value,
+      oldPrice: +document.getElementById('oldPrice').value || 0,
+      discount: +document.getElementById('discount').value || 0,
+      stock: +document.getElementById('stock').value,
+      rating: +document.getElementById('rating').value,
+      img: document.getElementById('img').value.trim(),
+      active: document.getElementById('active').checked
+    };
+
+    if (editing) {
+      const idx = products.findIndex(x => x.id === +editId);
+      products[idx] = { ...products[idx], ...data };
+      showToast('পণ্য আপডেট হয়েছে ✅', 'success');
+    } else {
+      const newId = Math.max(0, ...products.map(p => p.id)) + 1;
+      products.push({ id: newId, ...data });
+      showToast('পণ্য যোগ হয়েছে ✅', 'success');
+    }
+
+    AdminStore.set('products', products);
+    setTimeout(() => location.href = 'products.html', 900);
+  };
+
+  // Delete
+  function deleteProduct() {
+    if (!confirm('এই পণ্যটি সত্যিই ডিলিট করতে চান?')) return;
+    const products = AdminStore.get('products', DEMO_PRODUCTS).filter(p => p.id !== +editId);
+    AdminStore.set('products', products);
+    showToast('পণ্য ডিলিট হয়েছে ✅', 'success');
+    setTimeout(() => location.href = 'products.html', 700);
+  }
+</script>
+</body>
+</html>

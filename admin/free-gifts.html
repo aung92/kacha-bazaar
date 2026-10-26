@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ফ্রি গিফট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="ফ্রি গিফট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🎁 ফ্রি গিফট (নির্দিষ্ট অর্ডারে)</h1>
+        <button class="btn btn-primary" onclick="openGiftModal()"><i class="fa-solid fa-plus"></i> নতুন গিফট</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>গিফট</th><th>মিনিমাম অর্ডার</th><th>স্টক</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="giftBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="giftModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head"><h3 id="modalTitle">নতুন গিফট</h3><button class="close-modal" onclick="closeModal('giftModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="giftId">
+      <div class="form-row single"><div class="form-group"><label>গিফটের নাম <span class="req">*</span></label><input type="text" id="giftName" placeholder="যেমন: ফ্রি মধু স্যাম্পল"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label>মিনিমাম অর্ডার (৳) <span class="req">*</span></label><input type="number" id="giftMin" min="0" value="1000"></div>
+        <div class="form-group"><label>স্টক</label><input type="number" id="giftStock" min="0" value="100"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="giftActive" checked style="width:auto;accent-color:var(--green-600)"><span>সক্রিয়</span></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('giftModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveGift()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_GIFTS = [
+    { id: 1, name: 'ফ্রি মধু স্যাম্পল (১০০ গ্রাম)', min: 1000, stock: 50, active: true },
+    { id: 2, name: 'ফ্রি দারুচিনি প্যাক', min: 1500, stock: 30, active: true }
+  ];
+
+  function getGifts() { return AdminStore.get('free_gifts', DEFAULT_GIFTS); }
+  function saveGifts(l) { AdminStore.set('free_gifts', l); }
+
+  function render() {
+    document.getElementById('giftBody').innerHTML = getGifts().map(g => `
+      <tr>
+        <td><strong>${g.name}</strong></td>
+        <td>${formatTk(g.min)}+</td>
+        <td>${g.stock || 0}</td>
+        <td><span class="badge ${g.active ? 'badge-active' : 'badge-inactive'}">${g.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+        <td class="actions">
+          <button onclick="editGift(${g.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteGift(${g.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো গিফট নেই</td></tr>';
+  }
+
+  function openGiftModal() {
+    ['giftId','giftName'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('giftMin').value = 1000;
+    document.getElementById('giftStock').value = 100;
+    document.getElementById('giftActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন গিফট';
+    document.getElementById('giftModal').classList.add('show');
+  }
+
+  function editGift(id) {
+    const g = getGifts().find(x => x.id === id);
+    if (!g) return;
+    document.getElementById('giftId').value = g.id;
+    document.getElementById('giftName').value = g.name;
+    document.getElementById('giftMin').value = g.min;
+    document.getElementById('giftStock').value = g.stock || 0;
+    document.getElementById('giftActive').checked = g.active;
+    document.getElementById('modalTitle').textContent = 'এডিট গিফট';
+    document.getElementById('giftModal').classList.add('show');
+  }
+
+  function saveGift() {
+    const id = document.getElementById('giftId').value;
+    const name = document.getElementById('giftName').value.trim();
+    if (!name) { showToast('নাম দিন', 'error'); return; }
+    const data = {
+      name,
+      min: +document.getElementById('giftMin').value || 0,
+      stock: +document.getElementById('giftStock').value || 0,
+      active: document.getElementById('giftActive').checked
+    };
+    const list = getGifts();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data });
+    }
+    saveGifts(list);
+    closeModal('giftModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteGift(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveGifts(getGifts().filter(g => g.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>আমার অ্যাকাউন্ট — কাচাবাজার</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--gray-50); }
+    .account-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      padding: 40px 0;
+      align-items: start;
+    }
+
+    .account-sidebar {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .user-profile-brief {
+      padding: 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--green-50);
+    }
+    .user-avatar {
+      width: 70px; height: 70px;
+      background: var(--green-600);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 700;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 10px rgba(22,163,74,0.2);
+    }
+    .user-profile-brief h3 { font-size: 18px; color: var(--gray-900); }
+    .user-profile-brief p { font-size: 13px; color: var(--gray-500); }
+
+    .account-menu { list-style: none; padding: 10px 0; }
+    .account-menu li a, .account-menu li button {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px;
+      font-size: 14px; font-weight: 500;
+      color: var(--gray-700);
+      width: 100%; text-align: left;
+      transition: all 0.2s;
+    }
+    .account-menu li a:hover, .account-menu li button:hover,
+    .account-menu li.active a {
+      background: var(--green-50);
+      color: var(--green-700);
+      border-left: 3px solid var(--green-600);
+    }
+    .account-menu li a i, .account-menu li button i { width: 20px; text-align: center; }
+    .account-menu li button.text-danger:hover {
+      background: #fef2f2; color: var(--red-500); border-left-color: var(--red-500);
+    }
+
+    .account-content {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      min-height: 500px;
+    }
+    .tab-pane { display: none; padding: 30px; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .tab-header h2 { font-size: 20px; color: var(--gray-900); }
+
+    /* ড্যাশবোর্ড স্ট্যাটস */
+    .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+    .stat-box { background: var(--gray-50); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--gray-200); }
+    .stat-box i { font-size: 28px; color: var(--green-600); margin-bottom: 10px; }
+    .stat-box h4 { font-size: 22px; color: var(--gray-900); }
+    .stat-box p { font-size: 13px; color: var(--gray-500); }
+
+    /* ফর্ম স্টাইল */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--gray-700); }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 16px; border: 1px solid var(--gray-300); border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--green-500); }
+    .btn-save { background: var(--green-600); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-save:hover { background: var(--green-700); }
+
+    /* অর্ডার কার্ড */
+    .order-card { border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .order-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; margin-bottom: 12px; }
+    .order-head h4 { font-size: 15px; color: var(--gray-900); }
+    .order-head span { font-size: 13px; color: var(--gray-500); }
+    .order-body { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--gray-700); margin-bottom: 12px; }
+    .order-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: var(--gray-50); padding: 12px; border-radius: 6px; }
+    .order-item-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray-600); }
+
+    /* উইশলিস্ট গ্রিড */
+    .wishlist-grid-tab { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .wish-item-card { display: flex; gap: 12px; align-items: center; border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px; transition: box-shadow 0.2s; }
+    .wish-item-card:hover { box-shadow: var(--shadow-sm); }
+    .wish-item-card img { width: 70px; height: 70px; border-radius: 6px; object-fit: cover; border: 1px solid var(--gray-200); }
+    .wish-item-info { flex: 1; }
+    .wish-item-info h4 { font-size: 14px; color: var(--gray-900); margin-bottom: 2px; }
+    .wish-item-info .price { font-size: 14px; font-weight: 700; color: var(--green-700); }
+    .wish-item-actions { display: flex; flex-direction: column; gap: 6px; }
+    .wish-item-actions button { padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-add-cart { background: var(--green-50); color: var(--green-700); border: 1px solid var(--green-200, #bbf7d0) !important; }
+    .btn-add-cart:hover { background: var(--green-600); color: #fff; }
+    .btn-remove-wish { background: #fee2e2; color: #991b1b; }
+    .btn-remove-wish:hover { background: #ef4444; color: #fff; }
+
+    /* ✅ নতুন: ঠিকানা (Address) স্টাইল */
+    .address-card {
+      border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; margin-bottom: 16px; position: relative; background: #fff;
+    }
+    .address-card h4 { font-size: 15px; color: var(--gray-900); margin-bottom: 6px; }
+    .address-card p { font-size: 13px; color: var(--gray-600); margin-bottom: 4px; }
+    .address-card .default-badge { position: absolute; top: 16px; right: 16px; background: var(--green-100); color: var(--green-700); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .address-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+    .address-card .actions button { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; }
+    .btn-delete-addr { background: #fee2e2; color: #991b1b; }
+
+    @media (max-width: 900px) {
+      .account-layout { grid-template-columns: 1fr; }
+      .account-sidebar { display: flex; flex-direction: column; }
+      .account-menu { display: flex; overflow-x: auto; padding: 0; }
+      .account-menu li a, .account-menu li button { padding: 14px 20px; white-space: nowrap; border-bottom: 2px solid transparent; border-left: none; }
+      .account-menu li a:hover, .account-menu li button:hover, .account-menu li.active a { border-left: none; border-bottom: 2px solid var(--green-600); }
+      .user-profile-brief { display: none; }
+      .overview-grid { grid-template-columns: 1fr; }
+      .wishlist-grid-tab { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="container">
+  <div class="account-layout">
+    
+    <!-- সাইডবার মেনু -->
+    <aside class="account-sidebar">
+      <div class="user-profile-brief">
+        <div class="user-avatar" id="userAvatar">ক</div>
+        <h3 id="userNameDisplay">কাস্টমার</h3>
+        <p id="userPhoneDisplay"></p>
+      </div>
+      <ul class="account-menu">
+        <li class="active"><a href="#" onclick="switchTab(event, 'dashboard')"><i class="fa-solid fa-gauge"></i> ড্যাশবোর্ড</a></li>
+        <li><a href="#" onclick="switchTab(event, 'orders')"><i class="fa-solid fa-box"></i> আমার অর্ডার</a></li>
+        <li><a href="#" onclick="switchTab(event, 'wishlist')"><i class="fa-regular fa-heart"></i> আমার উইশলিস্ট</a></li>
+        <li><a href="#" onclick="switchTab(event, 'profile')"><i class="fa-regular fa-user"></i> প্রোফাইল এডিট</a></li>
+        
+        <!-- ✅ নতুন মেনু -->
+        <li><a href="#" onclick="switchTab(event, 'address')"><i class="fa-solid fa-location-dot"></i> ঠিকানা সমূহ</a></li>
+        <li><a href="#" onclick="switchTab(event, 'password')"><i class="fa-solid fa-lock"></i> পাসওয়ার্ড পরিবর্তন</a></li>
+        
+        <li><button onclick="openLogoutModal()" class="text-danger"><i class="fa-solid fa-power-off"></i> লগআউট</button></li>
+      </ul>
+    </aside>
+
+    <!-- মেইন কন্টেন্ট -->
+    <main class="account-content">
+      
+      <!-- ড্যাশবোর্ড -->
+      <div id="tab-dashboard" class="tab-pane active">
+        <div class="tab-header">
+          <h2>স্বাগতম, <span id="greetingName">কাস্টমার</span>! 👋</h2>
+        </div>
+        <div class="overview-grid">
+          <div class="stat-box">
+            <i class="fa-solid fa-box"></i>
+            <h4 id="statTotalOrders">০</h4>
+            <p>মোট অর্ডার</p>
+          </div>
+          <div class="stat-box">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            <h4 id="statTotalSpent">৳০</h4>
+            <p>মোট খরচ</p>
+          </div>
+          <div class="stat-box">
+            <i class="fa-regular fa-heart"></i>
+            <h4 id="statWishlist">০</h4>
+            <p>উইশলিস্ট আইটেম</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- অর্ডার -->
+      <div id="tab-orders" class="tab-pane">
+        <div class="tab-header"><h2>আমার অর্ডারসমূহ</h2></div>
+        <div id="ordersList"></div>
+      </div>
+
+      <!-- উইশলিস্ট -->
+      <div id="tab-wishlist" class="tab-pane">
+        <div class="tab-header"><h2>আমার উইশলিস্ট</h2></div>
+        <div id="wishlistTabContent" class="wishlist-grid-tab"></div>
+      </div>
+
+      <!-- প্রোফাইল -->
+      <div id="tab-profile" class="tab-pane">
+        <div class="tab-header"><h2>প্রোফাইল তথ্য</h2></div>
+        <form onsubmit="saveProfile(event)">
+          <div class="form-group"><label>পূর্ণ নাম</label><input type="text" id="editName" required></div>
+          <div class="form-group"><label>মোবাইল নম্বর</label><input type="tel" id="editPhone" required></div>
+          <button type="submit" class="btn-save">আপডেট করুন</button>
+        </form>
+      </div>
+
+      <!-- ✅ নতুন: ঠিকানা সমূহ -->
+      <div id="tab-address" class="tab-pane">
+        <div class="tab-header">
+          <h2>আমার ঠিকানা সমূহ</h2>
+          <button class="btn-save" onclick="openAddressForm()" style="padding: 8px 16px; font-size: 13px;">+ নতুন ঠিকানা</button>
+        </div>
+        
+        <div id="addressList"></div>
+
+        <!-- নতুন ঠিকানা ফর্ম -->
+        <div id="addressFormBox" style="display:none; background:var(--gray-50); padding:20px; border-radius:8px; margin-top:20px; border:1px solid var(--gray-200);">
+          <h4 style="margin-bottom:15px; font-size:15px;">নতুন ঠিকানা যুক্ত করুন</h4>
+          <form onsubmit="saveAddress(event)">
+            <input type="hidden" id="addrId">
+            <div class="form-group"><label>ঠিকানার নাম (যেমন: বাসা, অফিস)</label><input type="text" id="addrLabel" required placeholder="বাসা"></div>
+            <div class="form-group"><label>সম্পূর্ণ ঠিকানা</label><textarea id="addrDetails" required rows="2"></textarea></div>
+            <div class="form-group"><label>এলাকা / শহর</label><input type="text" id="addrCity" required placeholder="ঢাকা"></div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button type="submit" class="btn-save" style="flex:1;">সেভ করুন</button>
+              <button type="button" onclick="document.getElementById('addressFormBox').style.display='none'" style="flex:1; background:var(--gray-200); color:var(--gray-700); border:none; border-radius:8px; font-weight:600; cursor:pointer;">বাতিল</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ✅ নতুন: পাসওয়ার্ড পরিবর্তন -->
+      <div id="tab-password" class="tab-pane">
+        <div class="tab-header"><h2>পাসওয়ার্ড পরিবর্তন</h2></div>
+        <form onsubmit="changePassword(event)">
+          <div class="form-group"><label>বর্তমান পাসওয়ার্ড</label><input type="password" id="oldPassword" required placeholder="••••••••"></div>
+          <div class="form-group"><label>নতুন পাসওয়ার্ড</label><input type="password" id="newPassword" required placeholder="কমপক্ষে ৬ অক্ষর"></div>
+          <div class="form-group"><label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label><input type="password" id="confirmPassword" required placeholder="আবার লিখুন"></div>
+          <button type="submit" class="btn-save">পাসওয়ার্ড আপডেট করুন</button>
+        </form>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Logout Modal -->
+<div class="modal-overlay" id="logoutModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:380px;text-align:center;padding:30px 20px 20px;">
+    <div style="width:60px;height:60px;background:#fef2f2;color:var(--red-500);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;">
+      <i class="fa-solid fa-power-off"></i>
+    </div>
+    <h3 style="font-size:18px;margin-bottom:8px;color:var(--gray-900);">লগআউট করতে চান?</h3>
+    <p style="color:var(--gray-500);font-size:14px;margin-bottom:24px;">আপনি কি সত্যিই লগআউট করতে চান?</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn-save" style="flex:1;background:var(--gray-100);color:var(--gray-700);" onclick="closeLogoutModal()">না, থাকবো</button>
+      <button class="btn-save" style="flex:1;background:var(--red-500);" onclick="confirmLogout()">হ্যাঁ, লগআউট</button>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<!-- স্ক্রিপ্ট লোড -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/main.js"></script>
+
+<script>
+  let currentUser = null;
+  let allOrders = [];
+  let allProductsCache = [];
+  let userAddresses = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof supabaseClient === 'undefined') {
+      showToast('Supabase কানেকশন লোড হয়নি', 'error');
+      return;
+    }
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+      showToast('অ্যাকাউন্ট দেখতে লগইন করুন', 'error');
+      setTimeout(() => location.href = 'login.html?redirect=account.html', 1200);
+      return;
+    }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    currentUser = {
+      id: session.user.id,
+      name: profile?.name || session.user.user_metadata?.name || 'কাস্টমার',
+      phone: profile?.phone || session.user.user_metadata?.phone || ''
+    };
+
+    const name = currentUser.name;
+    document.getElementById('userNameDisplay').textContent = name;
+    document.getElementById('userPhoneDisplay').textContent = currentUser.phone;
+    document.getElementById('greetingName').textContent = name.split(' ')[0];
+    document.getElementById('userAvatar').textContent = (name[0] || 'ক').toUpperCase();
+    document.getElementById('editName').value = name;
+    document.getElementById('editPhone').value = currentUser.phone;
+
+    await loadMyOrders();
+    try { allProductsCache = await loadProducts(); } catch (e) { allProductsCache = PRODUCTS; }
+    
+    // ✅ লোকাল স্টোরেজ থেকে ঠিকানা লোড করা
+    loadAddresses();
+  });
+
+  // ✅ ট্যাব সুইচিং লজিক
+  function switchTab(e, tabId) {
+    if (e) e.preventDefault();
+    document.querySelectorAll('.account-menu li').forEach(li => li.classList.remove('active'));
+    if (e && e.target.closest('li')) e.target.closest('li').classList.add('active');
+    
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    const targetTab = document.getElementById('tab-' + tabId);
+    if (targetTab) targetTab.classList.add('active');
+
+    if (tabId === 'wishlist') renderWishlistTab();
+    if (tabId === 'address') loadAddresses();
+  }
+
+  // ============================================
+  // ✅ ১. ঠিকানা (Address Book) ফাংশন
+  // ============================================
+  function loadAddresses() {
+    // লোকাল স্টোরেজ থেকে ডাটা আনা (ইউজার-স্পেসিফিক)
+    const allAddrs = JSON.parse(localStorage.getItem('kc_user_addresses') || '{}');
+    userAddresses = allAddrs[currentUser.id] || [];
+    renderAddresses();
+  }
+
+  function saveAddress(e) {
+    e.preventDefault();
+    const id = document.getElementById('addrId').value || Date.now().toString();
+    const label = document.getElementById('addrLabel').value;
+    const details = document.getElementById('addrDetails').value;
+    const city = document.getElementById('addrCity').value;
+
+    const newAddr = { id, label, details, city };
+
+    const existingIndex = userAddresses.findIndex(a => a.id === id);
+    if (existingIndex > -1) {
+      userAddresses[existingIndex] = newAddr;
+    } else {
+      userAddresses.push(newAddr);
+    }
+
+    // লোকাল স্টোরেজে সেভ
+    const allAddrs = JSON.parse(localStorage.getItem('kc_user_addresses') || '{}');
+    allAddrs[currentUser.id] = userAddresses;
+    localStorage.setItem('kc_user_addresses', JSON.stringify(allAddrs));
+
+    showToast('ঠিকানা সেভ হয়েছে ✅', 'success');
+    document.getElementById('addressFormBox').style.display = 'none';
+    renderAddresses();
+  }
+
+  function renderAddresses() {
+    const container = document.getElementById('addressList');
+    if (!userAddresses.length) {
+      container.innerHTML = `<p style="color:var(--gray-500); text-align:center; padding:20px;">কোনো ঠিকানা সেভ করা নেই।</p>`;
+      return;
+    }
+
+    container.innerHTML = userAddresses.map(a => `
+      <div class="address-card">
+        <h4>${a.label}</h4>
+        <p>${a.details}</p>
+        <p><strong>এলাকা:</strong> ${a.city}</p>
+        <div class="actions">
+          <button class="btn-delete-addr" onclick="deleteAddress('${a.id}')"><i class="fa-solid fa-trash"></i> ডিলিট</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function deleteAddress(id) {
+    if (!confirm('এই ঠিকানাটি মুছে ফেলবেন?')) return;
+    userAddresses = userAddresses.filter(a => a.id !== id);
+    const allAddrs = JSON.parse(localStorage.getItem('kc_user_addresses') || '{}');
+    allAddrs[currentUser.id] = userAddresses;
+    localStorage.setItem('kc_user_addresses', JSON.stringify(allAddrs));
+    renderAddresses();
+    showToast('ডিলিট হয়েছে', 'error');
+  }
+
+  function openAddressForm() {
+    document.getElementById('addrId').value = '';
+    document.getElementById('addrLabel').value = '';
+    document.getElementById('addrDetails').value = '';
+    document.getElementById('addrCity').value = '';
+    document.getElementById('addressFormBox').style.display = 'block';
+  }
+
+  // ============================================
+  // ✅ ২. পাসওয়ার্ড পরিবর্তন (Change Password)
+  // ============================================
+  async function changePassword(e) {
+    e.preventDefault();
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword.length < 6) {
+      showToast('নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে', 'error'); return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('নতুন পাসওয়ার্ড দুটি মিলছে না', 'error'); return;
+    }
+
+    try {
+      // Supabase-এ পাসওয়ার্ড আপডেট
+      const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      showToast('পাসওয়ার্ড সফলভাবে আপডেট হয়েছে ✅', 'success');
+      e.target.reset();
+    } catch (err) {
+      showToast('পাসওয়ার্ড আপডেট ব্যর্থ: ' + err.message, 'error');
+    }
+  }
+
+  // ============================================
+  // অন্যান্য ফাংশন (প্রোফাইল, উইশলিস্ট, অর্ডার)
+  // ============================================
+  async function loadMyOrders() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('customer_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      allOrders = data || [];
+      renderOrders();
+      updateDashboardStats();
+    } catch (err) {
+      console.error('Order load failed:', err);
+      document.getElementById('ordersList').innerHTML = `<p style="color:red;text-align:center;">অর্ডার লোড ব্যর্থ: ${err.message}</p>`;
+    }
+  }
+
+  function renderOrders() {
+    const container = document.getElementById('ordersList');
+    if (!allOrders.length) {
+      container.innerHTML = `<p style="color:var(--gray-500);text-align:center;padding:20px;">এখনো কোনো অর্ডার করা হয়নি।</p>`;
+      return;
+    }
+    const statusLabels = { pending: '⏳ অপেক্ষমাণ', confirmed: '✅ কনফার্ম', packed: '📦 প্যাকড', shipped: '🚚 শিপড', delivered: '🎉 ডেলিভার্ড', cancelled: '❌ বাতিল' };
+    container.innerHTML = allOrders.map(o => {
+      let itemsHtml = '';
+      if (o.order_items && o.order_items.length) {
+        itemsHtml = `<div class="order-items">${o.order_items.map(it => `<div class="order-item-row"><span>${it.name} (${it.qty}${it.unit ? ' ' + it.unit : 'টি'})</span><span>${formatTk(it.price * it.qty)}</span></div>`).join('')}</div>`;
+      }
+      return `
+        <div class="order-card">
+          <div class="order-head"><h4>#${o.order_number || o.id}</h4><span>${formatDate(o.created_at)}</span></div>
+          <div class="order-body"><span>স্ট্যাটাস: <strong style="color:var(--green-600)">${statusLabels[o.status] || o.status}</strong></span><strong>${formatTk(o.total)}</strong></div>
+          ${itemsHtml}
+        </div>`;
+    }).join('');
+  }
+
+  function renderWishlistTab() {
+    const container = document.getElementById('wishlistTabContent');
+    if (!container) return;
+    const ids = Wishlist.get();
+    const items = ids.map(id => allProductsCache.find(p => Number(p.id) === Number(id))).filter(Boolean);
+
+    if (!items.length) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px 20px;"><i class="fa-regular fa-heart" style="font-size: 48px; color: var(--gray-300); margin-bottom: 16px;"></i><p style="color: var(--gray-500); margin-bottom: 20px;">আপনার উইশলিস্ট খালি।</p><a href="shop.html" class="btn-save" style="text-decoration: none; display: inline-block;">শপে ফিরে যান</a></div>`;
+      return;
+    }
+    container.innerHTML = items.map(p => `
+      <div class="wish-item-card">
+        <img src="${p.img}" alt="${p.name}">
+        <div class="wish-item-info"><h4><a href="product.html?id=${p.id}">${p.name}</a></h4><div class="price">${formatTk(p.price)}</div></div>
+        <div class="wish-item-actions">
+          <button class="btn-add-cart" onclick="Cart.add(${p.id}); showToast('কার্টে যোগ হয়েছে ✅', 'success');"><i class="fa-solid fa-cart-plus"></i></button>
+          <button class="btn-remove-wish" onclick="removeWish(${p.id})"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`).join('');
+  }
+
+  function removeWish(id) {
+    Wishlist.toggle(id);
+    renderWishlistTab();
+    updateDashboardStats();
+    showToast('উইশলিস্ট থেকে সরানো হয়েছে', 'error');
+  }
+
+  function updateDashboardStats() {
+    const totalOrders = allOrders.length;
+    const totalSpent = allOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const wishlistCount = typeof Wishlist !== 'undefined' ? Wishlist.get().length : 0;
+    document.getElementById('statTotalOrders').textContent = totalOrders;
+    document.getElementById('statTotalSpent').textContent = formatTk(totalSpent);
+    document.getElementById('statWishlist').textContent = wishlistCount;
+  }
+
+  async function saveProfile(e) {
+    e.preventDefault();
+    const newName = document.getElementById('editName').value.trim();
+    const newPhone = document.getElementById('editPhone').value.trim();
+    if (!newName) { showToast('নাম দিন', 'error'); return; }
+    if (!/^01[0-9]{9}$/.test(newPhone)) { showToast('সঠিক মোবাইল নম্বর দিন', 'error'); return; }
+    try {
+      const { error } = await supabaseClient.from('profiles').update({ name: newName, phone: newPhone }).eq('id', currentUser.id);
+      if (error) throw error;
+      currentUser.name = newName;
+      currentUser.phone = newPhone;
+      document.getElementById('userNameDisplay').textContent = newName;
+      document.getElementById('userPhoneDisplay').textContent = newPhone;
+      document.getElementById('greetingName').textContent = newName.split(' ')[0];
+      document.getElementById('userAvatar').textContent = (newName[0] || 'ক').toUpperCase();
+      showToast('প্রোফাইল আপডেট হয়েছে ✅', 'success');
+    } catch (err) {
+      showToast('আপডেট ব্যর্থ: ' + err.message, 'error');
+    }
+  }
+
+  function openLogoutModal() { document.getElementById('logoutModal').style.display = 'flex'; }
+  function closeLogoutModal() { document.getElementById('logoutModal').style.display = 'none'; }
+  async function confirmLogout() {
+    await supabaseClient.auth.signOut();
+    showToast('লগআউট সফল ✅', 'success');
+    setTimeout(() => location.href = 'index.html', 1000);
+  }
+</script>
+<script src="js/pwa-init.js"></script>
+</body>
+</html>

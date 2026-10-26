@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কাস্টমার সেগমেন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="কাস্টমার সেগমেন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>👥 কাস্টমার সেগমেন্ট</h1>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card">
+          <div class="stat-info"><h3>মোট কাস্টমার</h3><strong id="statAll">০</strong></div>
+          <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><h3>VIP (৳৫০০০+)</h3><strong id="statVip">০</strong></div>
+          <div class="stat-icon orange"><i class="fa-solid fa-crown"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><h3>নতুন (৩০ দিন)</h3><strong id="statNew">০</strong></div>
+          <div class="stat-icon green"><i class="fa-solid fa-user-plus"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><h3>ইনঅ্যাক্টিভ</h3><strong id="statInactive">০</strong></div>
+          <div class="stat-icon red"><i class="fa-solid fa-user-slash"></i></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>সেগমেন্ট ফিল্টার</h2>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm btn-outline" onclick="filterSegment('all')">সব</button>
+            <button class="btn btn-sm btn-outline" onclick="filterSegment('vip')">VIP</button>
+            <button class="btn btn-sm btn-outline" onclick="filterSegment('new')">নতুন</button>
+            <button class="btn btn-sm btn-outline" onclick="filterSegment('inactive')">ইনঅ্যাক্টিভ</button>
+            <button class="btn btn-sm btn-outline" onclick="filterSegment('blocked')">ব্লকড</button>
+          </div>
+        </div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>নাম</th><th>ফোন</th><th>অর্ডার</th><th>মোট স্পেন্ট</th><th>সেগমেন্ট</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="customerBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  let currentFilter = 'all';
+
+  function getCustomers() { return AdminStore.get('customers', DEMO_CUSTOMERS); }
+  function saveCustomers(l) { AdminStore.set('customers', l); }
+  function getBlocked() { return AdminStore.get('blocked_customers', []); }
+  function saveBlocked(l) { AdminStore.set('blocked_customers', l); }
+
+  function renderStats() {
+    const customers = getCustomers();
+    const vip = customers.filter(c => (c.spent || 0) > 5000).length;
+    const newC = customers.filter(c => new Date(c.joined) > new Date(Date.now() - 30*24*60*60*1000)).length;
+    const blocked = getBlocked().length;
+    document.getElementById('statAll').textContent = customers.length;
+    document.getElementById('statVip').textContent = vip;
+    document.getElementById('statNew').textContent = newC;
+    document.getElementById('statInactive').textContent = blocked;
+  }
+
+  function render() {
+    const customers = getCustomers();
+    const blocked = getBlocked();
+    let list = customers.slice();
+
+    if (currentFilter === 'vip') list = list.filter(c => (c.spent || 0) > 5000);
+    if (currentFilter === 'new') list = list.filter(c => new Date(c.joined) > new Date(Date.now() - 30*24*60*60*1000));
+    if (currentFilter === 'inactive') list = list.filter(c => new Date(c.joined) < new Date(Date.now() - 60*24*60*60*1000));
+    if (currentFilter === 'blocked') list = list.filter(c => blocked.includes(c.phone));
+
+    document.getElementById('customerBody').innerHTML = list.map(c => {
+      const isBlocked = blocked.includes(c.phone);
+      const isVip = (c.spent || 0) > 5000;
+      const isNew = new Date(c.joined) > new Date(Date.now() - 30*24*60*60*1000);
+      return `<tr>
+        <td><strong>${c.name}</strong>${isBlocked ? ' <span class="badge badge-cancelled">ব্লকড</span>' : ''}</td>
+        <td>${c.phone}</td>
+        <td>${c.orders || 0}</td>
+        <td>${formatTk(c.spent || 0)}</td>
+        <td>
+          ${isVip ? '<span class="badge badge-pending">👑 VIP</span>' : ''}
+          ${isNew ? '<span class="badge badge-active">✨ নতুন</span>' : ''}
+          ${!isVip && !isNew ? '<span class="badge badge-inactive">রেগুলার</span>' : ''}
+        </td>
+        <td class="actions">
+          <button onclick="toggleBlock('${c.phone}')" title="${isBlocked ? 'আনব্লক' : 'ব্লক'}">
+            <i class="fa-solid ${isBlocked ? 'fa-unlock' : 'fa-ban'}" style="color:${isBlocked ? 'var(--green-600)' : 'var(--red-500)'}"></i>
+          </button>
+          <button onclick="viewDetail(${c.id})" title="দেখুন"><i class="fa-solid fa-eye"></i></button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো কাস্টমার নেই</td></tr>';
+  }
+
+  function toggleBlock(phone) {
+    let blocked = getBlocked();
+    if (blocked.includes(phone)) {
+      blocked = blocked.filter(p => p !== phone);
+      showToast('আনব্লক ✅', 'success');
+    } else {
+      blocked.push(phone);
+      showToast('ব্লক ✅', 'error');
+    }
+    saveBlocked(blocked);
+    renderStats();
+    render();
+  }
+
+  function filterSegment(seg) {
+    currentFilter = seg;
+    render();
+  }
+
+  function viewDetail(id) {
+    const c = getCustomers().find(x => x.id === id);
+    if (c) showToast(`${c.name} · ${formatTk(c.spent || 0)}`, 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderStats();
+    render();
+  });
+</script>
+</body>
+</html>

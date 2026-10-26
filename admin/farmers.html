@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কৃষক — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="কৃষক">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>👨‍🌾 কৃষক</h1>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="fa-solid fa-plus"></i> নতুন কৃষক
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 নাম দিয়ে খুঁজুন...">
+        <select id="filterDistrict">
+          <option value="">সব জেলা</option>
+          <option value="rangamati">রাঙ্গামাটি</option>
+          <option value="khagrachari">খাগড়াছড়ি</option>
+          <option value="bandarban">বান্দরবান</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>নাম</th>
+                  <th>জেলা</th>
+                  <th>গ্রাম</th>
+                  <th>অভিজ্ঞতা</th>
+                  <th>ফসল</th>
+                  <th>পণ্য</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="farmerBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="farmerModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন কৃষক</h3>
+      <button class="close-modal" onclick="closeModal('farmerModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>ID <span class="req">*</span></label>
+          <input type="text" id="farmerId" placeholder="f7">
+        </div>
+        <div class="form-group">
+          <label>নাম <span class="req">*</span></label>
+          <input type="text" id="farmerName" placeholder="কৃষকের নাম">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>জেলা <span class="req">*</span></label>
+          <select id="farmerDistrict">
+            <option value="rangamati">রাঙ্গামাটি</option>
+            <option value="khagrachari">খাগড়াছড়ি</option>
+            <option value="bandarban">বান্দরবান</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>গ্রাম</label>
+          <input type="text" id="farmerVillage" placeholder="গ্রামের নাম">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>অভিজ্ঞতা (বছর)</label>
+          <input type="number" id="farmerYears" min="0" value="5">
+        </div>
+        <div class="form-group">
+          <label>প্রধান ফসল</label>
+          <input type="text" id="farmerCrop" placeholder="সবজি ও ফল">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('farmerModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveFarmer()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_FARMERS = [
+    { id: 'f1', name: 'করিম মিয়া', district: 'rangamati', village: 'কাপ্তাই', years: 15, crop: 'সবজি ও ফল' },
+    { id: 'f2', name: 'সুবল চাকমা', district: 'rangamati', village: 'নানিয়ারচর', years: 20, crop: 'মাছ ও সবজি' },
+    { id: 'f3', name: 'রতন ত্রিপুরা', district: 'khagrachari', village: 'দীঘিনালা', years: 12, crop: 'মসলা' },
+    { id: 'f4', name: 'মেমং মারমা', district: 'bandarban', village: 'রুমা', years: 18, crop: 'পাহাড়ি ফল ও মধু' },
+    { id: 'f5', name: 'অংসুই প্রু', district: 'bandarban', village: 'থানচি', years: 10, crop: 'অর্গানিক শাক' },
+    { id: 'f6', name: 'জুম্মন মিয়া', district: 'khagrachari', village: 'মাটিরাঙ্গা', years: 22, crop: 'সবজি' }
+  ];
+
+  const DIST_NAMES = { rangamati: 'রাঙ্গামাটি', khagrachari: 'খাগড়াছড়ি', bandarban: 'বান্দরবান' };
+  let editingId = null;
+
+  function getFarmers() { return AdminStore.get('farmers', DEFAULT_FARMERS); }
+  function saveFarmers(list) { AdminStore.set('farmers', list); }
+
+  function render() {
+    const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+    const dist = document.getElementById('filterDistrict')?.value || '';
+
+    let farmers = getFarmers();
+    if (search) farmers = farmers.filter(f => f.name.toLowerCase().includes(search));
+    if (dist) farmers = farmers.filter(f => f.district === dist);
+
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    document.getElementById('farmerBody').innerHTML = farmers.map(f => {
+      const pcount = products.filter(p => p.farmer === f.id).length;
+      return `<tr>
+        <td><strong>${f.name}</strong></td>
+        <td>${DIST_NAMES[f.district] || f.district}</td>
+        <td>${f.village || '—'}</td>
+        <td>${f.years || 0} বছর</td>
+        <td>${f.crop || '—'}</td>
+        <td><span class="badge badge-active">${pcount}টি</span></td>
+        <td class="actions">
+          <button onclick="openEditModal('${f.id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteFarmer('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো কৃষক নেই</td></tr>';
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'নতুন কৃষক';
+    const id = 'f' + (getFarmers().length + 1);
+    document.getElementById('farmerId').value = id;
+    document.getElementById('farmerId').disabled = false;
+    ['farmerName','farmerVillage','farmerCrop'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('farmerYears').value = 5;
+    document.getElementById('farmerModal').classList.add('show');
+  }
+
+  function openEditModal(id) {
+    const f = getFarmers().find(x => x.id === id);
+    if (!f) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'কৃষক এডিট';
+    document.getElementById('farmerId').value = f.id;
+    document.getElementById('farmerId').disabled = true;
+    document.getElementById('farmerName').value = f.name;
+    document.getElementById('farmerDistrict').value = f.district;
+    document.getElementById('farmerVillage').value = f.village || '';
+    document.getElementById('farmerYears').value = f.years || 0;
+    document.getElementById('farmerCrop').value = f.crop || '';
+    document.getElementById('farmerModal').classList.add('show');
+  }
+
+  function saveFarmer() {
+    const id = document.getElementById('farmerId').value.trim();
+    const name = document.getElementById('farmerName').value.trim();
+    if (!id || !name) { showToast('ID ও নাম দিন', 'error'); return; }
+
+    const data = {
+      id,
+      name,
+      district: document.getElementById('farmerDistrict').value,
+      village: document.getElementById('farmerVillage').value.trim(),
+      years: +document.getElementById('farmerYears').value || 0,
+      crop: document.getElementById('farmerCrop').value.trim()
+    };
+
+    const farmers = getFarmers();
+    if (editingId) {
+      const idx = farmers.findIndex(f => f.id === editingId);
+      farmers[idx] = data;
+      showToast('আপডেট ✅', 'success');
+    } else {
+      if (farmers.some(f => f.id === id)) { showToast('ID আগে আছে', 'error'); return; }
+      farmers.push(data);
+      showToast('যোগ হয়েছে ✅', 'success');
+    }
+    saveFarmers(farmers);
+    closeModal('farmerModal');
+    document.getElementById('farmerId').disabled = false;
+    render();
+  }
+
+  function deleteFarmer(id) {
+    if (!confirm('কৃষক ডিলিট করতে চান?')) return;
+    saveFarmers(getFarmers().filter(f => f.id !== id));
+    showToast('ডিলিট ✅', 'success');
+    render();
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  render();
+  document.getElementById('searchInput').addEventListener('input', render);
+  document.getElementById('filterDistrict').addEventListener('change', render);
+</script>
+</body>
+</html>

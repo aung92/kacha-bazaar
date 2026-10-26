@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>অ্যাডভান্সড রিপোর্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="অ্যাডভান্সড রিপোর্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📈 অ্যাডভান্সড রিপোর্ট</h1>
+        <button class="btn btn-outline" onclick="exportCSV()"><i class="fa-solid fa-download"></i> CSV ডাউনলোড</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="form-group" style="margin:0">
+              <label style="font-size:12px;">শুরুর তারিখ</label>
+              <input type="date" id="dateFrom" value="2025-01-01">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label style="font-size:12px;">শেষ তারিখ</label>
+              <input type="date" id="dateTo" value="2025-12-31">
+            </div>
+            <button class="btn btn-primary" onclick="generateReport()" style="margin-top:20px;"><i class="fa-solid fa-chart-line"></i> রিপোর্ট</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><div class="stat-info"><h3>মোট বিক্রি</h3><strong id="rTotal">৳০</strong></div><div class="stat-icon green"><i class="fa-solid fa-money-bill-wave"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>মোট অর্ডার</h3><strong id="rOrders">০</strong></div><div class="stat-icon blue"><i class="fa-solid fa-cart-shopping"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>গড় অর্ডার</h3><strong id="rAvg">৳০</strong></div><div class="stat-icon orange"><i class="fa-solid fa-calculator"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>ইউনিক কাস্টমার</h3><strong id="rCustomers">০</strong></div><div class="stat-icon purple"><i class="fa-solid fa-users"></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>📅 দৈনিক বিক্রি</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>তারিখ</th><th>অর্ডার</th><th>বিক্রি</th><th>গড়</th></tr></thead>
+              <tbody id="dailyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  let reportData = [];
+
+  function generateReport() {
+    const from = new Date(document.getElementById('dateFrom').value);
+    const to = new Date(document.getElementById('dateTo').value);
+    to.setHours(23, 59, 59);
+
+    const orders = AdminStore.get('orders', DEMO_ORDERS).filter(o => {
+      const d = new Date(o.date);
+      return d >= from && d <= to && o.status !== 'cancelled';
+    });
+
+    const total = orders.reduce((s, o) => s + (o.total || 0), 0);
+    const uniqueCustomers = new Set(orders.map(o => o.phone)).size;
+
+    document.getElementById('rTotal').textContent = formatTk(total);
+    document.getElementById('rOrders').textContent = orders.length;
+    document.getElementById('rAvg').textContent = formatTk(orders.length ? total / orders.length : 0);
+    document.getElementById('rCustomers').textContent = uniqueCustomers;
+
+    // দৈনিক গ্রুপ
+    const daily = {};
+    orders.forEach(o => {
+      const key = o.date;
+      if (!daily[key]) daily[key] = { count: 0, total: 0 };
+      daily[key].count++;
+      daily[key].total += o.total || 0;
+    });
+
+    reportData = Object.entries(daily).sort((a, b) => new Date(b[0]) - new Date(a[0])).map(([date, data]) => ({
+      date, count: data.count, total: data.total, avg: data.total / data.count
+    }));
+
+    document.getElementById('dailyBody').innerHTML = reportData.map(r => `
+      <tr>
+        <td>${formatDate(r.date)}</td>
+        <td>${r.count}</td>
+        <td><strong>${formatTk(r.total)}</strong></td>
+        <td>${formatTk(r.avg)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো ডেটা নেই</td></tr>';
+  }
+
+  function exportCSV() {
+    if (!reportData.length) { showToast('আগে রিপোর্ট তৈরি করুন', 'error'); return; }
+    const rows = [['Date', 'Orders', 'Total', 'Average']];
+    reportData.forEach(r => rows.push([r.date, r.count, r.total, r.avg.toFixed(0)]));
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'report-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    showToast('CSV ডাউনলোড ✅', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', generateReport);
+</script>
+</body>
+</html>

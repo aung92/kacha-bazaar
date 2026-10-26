@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ডেলিভারি পার্টনার — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--gray-300);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--green-600);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+    }
+
+    .company-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      object-fit: contain;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      font-size: 20px;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .company-logo.fallback {
+      background: linear-gradient(135deg, #16a34a, #0891b2);
+    }
+
+    /* ✅ লোগো আপলোড এরিয়া */
+    .logo-upload-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--gray-100);
+      border: 1px dashed var(--gray-300);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      height: 42px;
+    }
+    .upload-btn:hover {
+      background: var(--green-50);
+      border-color: var(--green-500);
+      color: var(--green-700);
+    }
+    .upload-btn input[type="file"] {
+      display: none;
+    }
+
+    /* ✅ প্রিভিউ বক্স */
+    .logo-preview-box {
+      margin-bottom: 16px;
+      padding: 16px;
+      background: var(--gray-50);
+      border: 1px dashed var(--gray-300);
+      border-radius: 10px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .logo-preview-box.has-image {
+      background: #f0fdf4;
+      border-color: var(--green-300, #86efac);
+      border-style: solid;
+    }
+    .logo-preview-box small {
+      display: block;
+      color: var(--gray-500);
+      font-size: 12px;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    .logo-preview-box .preview-img-wrap {
+      display: inline-block;
+      position: relative;
+    }
+    .logo-preview-box img {
+      max-width: 100px;
+      max-height: 100px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #fff;
+      padding: 6px;
+      border: 1px solid var(--gray-200);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .logo-preview-box .remove-logo-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--red-500);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(239,68,68,0.3);
+      border: 2px solid #fff;
+    }
+    .logo-preview-box .remove-logo-btn:hover {
+      background: var(--red-600);
+    }
+    .logo-preview-box .placeholder-icon {
+      font-size: 40px;
+      color: var(--gray-300);
+      margin-bottom: 8px;
+    }
+    .logo-preview-box .placeholder-text {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    /* ট্যাব */
+    .logo-input-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+      background: var(--gray-100);
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .logo-input-tabs button {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      transition: all 0.2s;
+    }
+    .logo-input-tabs button.active {
+      background: #fff;
+      color: var(--green-700);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ফাইল ড্রপ জোন */
+    .file-drop-zone {
+      padding: 20px;
+      border: 2px dashed var(--gray-300);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff;
+    }
+    .file-drop-zone:hover, .file-drop-zone.dragover {
+      border-color: var(--green-500);
+      background: var(--green-50);
+    }
+    .file-drop-zone i {
+      font-size: 32px;
+      color: var(--green-600);
+      margin-bottom: 8px;
+    }
+    .file-drop-zone strong {
+      display: block;
+      font-size: 14px;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+    .file-drop-zone small {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .file-drop-zone.has-file {
+      border-color: var(--green-600);
+      border-style: solid;
+      background: var(--green-50);
+    }
+  </style>
+</head>
+<body data-title="ডেলিভারি পার্টনার">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🚚 ডেলিভারি পার্টনার (কোম্পানি)</h1>
+        <button class="btn btn-primary" onclick="openPartnerModal()">
+          <i class="fa-solid fa-plus"></i> নতুন পার্টনার
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="font-size:13px; color:var(--gray-600); padding:14px 20px;">
+          <i class="fa-solid fa-info-circle" style="color:var(--green-600)"></i>
+          ডেলিভারি পার্টনার কোম্পানি (যেমন: Pathao, RedX, Steadfast, Sundarban)। 
+          <strong>চেকআউটে দেখাবে</strong> টগল On থাকলে গ্রাহক চেকআউটে সেই কোম্পানি বেছে নিতে পারবে।
+          <br>
+          <strong style="color:var(--green-700)">📸 লোগো:</strong> সরাসরি <strong>ফাইল আপলোড</strong> করুন অথবা ইমেজ URL দিন। ফাইল আপলোড হলে অটো Base64-এ সেভ হবে (সর্বোচ্চ 500KB)।
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>লোগো</th>
+                  <th>কোম্পানির নাম</th>
+                  <th>ফোন</th>
+                  <th>ডেলিভারি চার্জ</th>
+                  <th>গড় সময়</th>
+                  <th>চেকআউটে দেখাবে</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="partnerBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Partner Modal -->
+<div class="modal-overlay" id="partnerModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ডেলিভারি পার্টনার</h3>
+      <button class="close-modal" onclick="closeModal('partnerModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="partnerId">
+
+      <div class="form-row single">
+        <div class="form-group">
+          <label>কোম্পানির নাম <span class="req">*</span></label>
+          <input type="text" id="partnerName" placeholder="যেমন: Pathao Courier">
+        </div>
+      </div>
+
+      <!-- ✅ লোগো সেকশন — আপলোড বা URL -->
+      <div class="form-group">
+        <label>কোম্পানির লোগো</label>
+
+        <!-- লোগো ইনপুট ট্যাব -->
+        <div class="logo-input-tabs">
+          <button type="button" class="active" data-mode="upload" onclick="switchLogoMode('upload')">
+            <i class="fa-solid fa-upload"></i> ফাইল আপলোড
+          </button>
+          <button type="button" data-mode="url" onclick="switchLogoMode('url')">
+            <i class="fa-solid fa-link"></i> ইমেজ URL
+          </button>
+        </div>
+
+        <!-- মোড ১: ফাইল আপলোড -->
+        <div id="logoUploadMode">
+          <div class="file-drop-zone" id="logoDropZone" onclick="document.getElementById('logoFileInput').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <strong>লোগো আপলোড করতে ক্লিক করুন</strong>
+            <small>অথবা এখানে ড্র্যাগ করুন · PNG, JPG, SVG · সর্বোচ্চ ৫০০ KB</small>
+          </div>
+          <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoFileSelect(event)">
+        </div>
+
+        <!-- মোড ২: URL -->
+        <div id="logoUrlMode" style="display:none;">
+          <input type="url" id="partnerLogo" placeholder="https://example.com/logo.png" oninput="previewLogoUrl()">
+          <small>সরাসরি ইমেজ লিংক দিন (.png, .jpg, .svg)</small>
+        </div>
+
+        <!-- ✅ প্রিভিউ বক্স -->
+        <div class="logo-preview-box" id="logoPreviewBox" style="margin-top:14px;">
+          <small>প্রিভিউ</small>
+          <div id="logoPreviewContent">
+            <i class="fa-solid fa-image placeholder-icon"></i>
+            <div class="placeholder-text">লোগো আপলোড বা URL দিন</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>হেল্পলাইন / ফোন</label>
+          <input type="tel" id="partnerPhone" placeholder="017XXXXXXXX">
+        </div>
+        <div class="form-group">
+          <label>ডেলিভারি চার্জ (৳)</label>
+          <input type="number" id="partnerCharge" min="0" placeholder="60" value="60">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>গড় ডেলিভারি সময়</label>
+          <input type="text" id="partnerTime" placeholder="২-৩ দিন">
+        </div>
+        <div class="form-group">
+          <label>ওয়েবসাইট (ঐচ্ছিক)</label>
+          <input type="url" id="partnerWebsite" placeholder="https://pathao.com">
+        </div>
+      </div>
+
+      <div class="form-row single">
+        <div class="form-group">
+          <label>বর্ণনা (ঐচ্ছিক)</label>
+          <textarea id="partnerDesc" rows="2" placeholder="যেমন: ঢাকায় সবচেয়ে দ্রুত ডেলিভারি"></textarea>
+        </div>
+      </div>
+
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="partnerActive" checked style="width:auto;accent-color:var(--green-600)">
+        <span>সক্রিয় (অ্যাক্টিভ)</span>
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="partnerShowInCheckout" checked style="width:auto;accent-color:var(--green-600)">
+        <span>চেকআউটে দেখাবে</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('partnerModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="savePartner()">সেভ করুন</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  // ✅ ডেমো লোগো — SVG data URI (নেটওয়ার্ক লাগবে না)
+  const DEMO_LOGOS = {
+    pathao: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23E91E63"/><text x="50" y="62" font-size="42" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">P</text></svg>',
+    redx: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23DC2626"/><text x="50" y="62" font-size="42" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">R</text></svg>',
+    steadfast: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%232563EB"/><text x="50" y="62" font-size="42" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">S</text></svg>',
+    sundarban: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23059669"/><text x="50" y="62" font-size="42" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">S</text></svg>'
+  };
+
+  const DEFAULT_PARTNERS = [
+    {
+      id: 1,
+      name: 'Pathao Courier',
+      logo: DEMO_LOGOS.pathao,
+      phone: '09610101010',
+      charge: 60,
+      time: '১-২ দিন',
+      website: 'https://pathao.com',
+      desc: 'ঢাকায় সবচেয়ে দ্রুত ডেলিভারি',
+      active: true,
+      showInCheckout: true
+    },
+    {
+      id: 2,
+      name: 'RedX',
+      logo: DEMO_LOGOS.redx,
+      phone: '09610101011',
+      charge: 50,
+      time: '২-৩ দিন',
+      website: 'https://redx.com.bd',
+      desc: 'সারা দেশে সাশ্রয়ী ডেলিভারি',
+      active: true,
+      showInCheckout: true
+    },
+    {
+      id: 3,
+      name: 'Steadfast',
+      logo: DEMO_LOGOS.steadfast,
+      phone: '09610101012',
+      charge: 55,
+      time: '২-৪ দিন',
+      website: 'https://steadfast.com.bd',
+      desc: 'নির্ভরযোগ্য ডেলিভারি সার্ভিস',
+      active: true,
+      showInCheckout: true
+    },
+    {
+      id: 4,
+      name: 'Sundarban Courier',
+      logo: DEMO_LOGOS.sundarban,
+      phone: '02-9111111',
+      charge: 45,
+      time: '৩-৫ দিন',
+      website: '',
+      desc: 'সর্বনিম্ন চার্জে ডেলিভারি',
+      active: true,
+      showInCheckout: true
+    }
+  ];
+
+  // ✅ মোডালের স্টেট
+  let currentLogoMode = 'upload';     // 'upload' | 'url'
+  let currentLogoData = '';           // URL বা Base64
+  let currentLogoSource = '';         // 'file' | 'url' | ''
+
+  function getPartners() {
+    const stored = AdminStore.get('delivery_partners', null);
+    if (!stored || !Array.isArray(stored) || !stored.length) {
+      AdminStore.set('delivery_partners', DEFAULT_PARTNERS);
+      return DEFAULT_PARTNERS;
+    }
+    return stored;
+  }
+  function savePartners(list) {
+    AdminStore.set('delivery_partners', list);
+  }
+
+  // ✅ নিরাপদ লোগো HTML — fallback সহ
+  function renderLogo(p) {
+    const hasLogo = p.logo && p.logo.trim();
+    if (hasLogo) {
+      return `<img src="${p.logo}" class="company-logo" alt="${p.name}" 
+        onerror="this.style.display='none';var fb=this.nextElementSibling;if(fb)fb.style.display='flex';">
+        <div class="company-logo fallback" style="display:none">${(p.name[0] || '?').toUpperCase()}</div>`;
+    }
+    return `<div class="company-logo fallback">${(p.name[0] || '?').toUpperCase()}</div>`;
+  }
+
+  function render() {
+    const list = getPartners();
+    const body = document.getElementById('partnerBody');
+
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-500)">কোনো ডেলিভারি পার্টনার নেই</td></tr>';
+      return;
+    }
+
+    body.innerHTML = list.map(p => {
+      const showInCheckout = p.showInCheckout !== false;
+      return `
+        <tr>
+          <td>${renderLogo(p)}</td>
+          <td>
+            <strong>${p.name}</strong>
+            ${p.desc ? `<br><small style="color:var(--gray-500)">${p.desc}</small>` : ''}
+          </td>
+          <td>${p.phone || '—'}</td>
+          <td><strong>${formatTk(p.charge || 0)}</strong></td>
+          <td>${p.time || '—'}</td>
+          <td>
+            <label class="toggle-switch" title="${showInCheckout ? 'চেকআউটে দেখাবে' : 'চেকআউটে দেখাবে না'}">
+              <input type="checkbox" ${showInCheckout ? 'checked' : ''} onchange="toggleShowInCheckout(${p.id}, this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+          <td class="actions">
+            <button onclick="editPartner(${p.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button>
+            <button class="del" onclick="deletePartner(${p.id})" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ✅ লোগো মোড সুইচ (ফাইল / URL)
+  function switchLogoMode(mode) {
+    currentLogoMode = mode;
+    document.querySelectorAll('.logo-input-tabs button').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.getElementById('logoUploadMode').style.display = mode === 'upload' ? 'block' : 'none';
+    document.getElementById('logoUrlMode').style.display = mode === 'url' ? 'block' : 'none';
+
+    // মোড বদলালে আগের ডেটা ক্লিয়ার
+    if (mode === 'upload') {
+      document.getElementById('partnerLogo').value = '';
+    } else {
+      document.getElementById('logoFileInput').value = '';
+      document.getElementById('logoDropZone').classList.remove('has-file');
+    }
+    currentLogoData = '';
+    currentLogoSource = '';
+    updatePreview('');
+  }
+
+  // ✅ ফাইল সিলেক্ট হ্যান্ডলার
+  function handleLogoFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    processLogoFile(file);
+  }
+
+  function processLogoFile(file) {
+    // টাইপ চেক
+    if (!file.type.startsWith('image/')) {
+      showToast('শুধু ইমেজ ফাইল (PNG/JPG/SVG) আপলোড করুন', 'error');
+      return;
+    }
+    // সাইজ চেক — 500 KB
+    if (file.size > 500 * 1024) {
+      showToast('ফাইল সাইজ ৫০০ KB এর কম হতে হবে', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target.result;
+      currentLogoData = base64;
+      currentLogoSource = 'file';
+      updatePreview(base64);
+
+      const dz = document.getElementById('logoDropZone');
+      dz.classList.add('has-file');
+      dz.innerHTML = `
+        <i class="fa-solid fa-circle-check" style="color:var(--green-600)"></i>
+        <strong>${file.name}</strong>
+        <small>${(file.size / 1024).toFixed(1)} KB · ক্লিক করে বদলান</small>
+      `;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ✅ URL ইনপুট চেঞ্জ
+  function previewLogoUrl() {
+    const url = document.getElementById('partnerLogo').value.trim();
+    if (url) {
+      currentLogoData = url;
+      currentLogoSource = 'url';
+      updatePreview(url);
+    } else {
+      currentLogoData = '';
+      currentLogoSource = '';
+      updatePreview('');
+    }
+  }
+
+  // ✅ প্রিভিউ আপডেট
+  function updatePreview(src) {
+    const box = document.getElementById('logoPreviewBox');
+    const content = document.getElementById('logoPreviewContent');
+
+    if (src && src.trim()) {
+      box.classList.add('has-image');
+      content.innerHTML = `
+        <div class="preview-img-wrap">
+          <img src="${src}" alt="Logo preview" onerror="this.parentElement.parentElement.innerHTML='<i class=\\'fa-solid fa-triangle-exclamation\\' style=\\'font-size:32px;color:#ef4444;\\'></i><div class=\\'placeholder-text\\' style=\\'color:#ef4444;\\'>ইমেজ লোড হয়নি</div>';">
+          <button type="button" class="remove-logo-btn" onclick="removeLogo()" title="সরান">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      box.classList.remove('has-image');
+      content.innerHTML = `
+        <i class="fa-solid fa-image placeholder-icon"></i>
+        <div class="placeholder-text">লোগো আপলোড বা URL দিন</div>
+      `;
+    }
+  }
+
+  // ✅ লোগো রিমুভ
+  function removeLogo() {
+    currentLogoData = '';
+    currentLogoSource = '';
+    document.getElementById('partnerLogo').value = '';
+    document.getElementById('logoFileInput').value = '';
+    
+    const dz = document.getElementById('logoDropZone');
+    dz.classList.remove('has-file');
+    dz.innerHTML = `
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <strong>লোগো আপলোড করতে ক্লিক করুন</strong>
+      <small>অথবা এখানে ড্র্যাগ করুন · PNG, JPG, SVG · সর্বোচ্চ ৫০০ KB</small>
+    `;
+
+    updatePreview('');
+  }
+
+  // ✅ ড্র্যাগ অ্যান্ড ড্রপ
+  document.addEventListener('DOMContentLoaded', () => {
+    const dz = document.getElementById('logoDropZone');
+    if (dz) {
+      ['dragenter', 'dragover'].forEach(evt => {
+        dz.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dz.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(evt => {
+        dz.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dz.classList.remove('dragover');
+        });
+      });
+      dz.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length) {
+          processLogoFile(files[0]);
+        }
+      });
+    }
+  });
+
+  function toggleShowInCheckout(id, checked) {
+    const list = getPartners();
+    const idx = list.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    list[idx].showInCheckout = checked;
+    savePartners(list);
+    showToast(checked ? 'চেকআউটে দেখাবে ✅' : 'চেকআউটে দেখাবে না', checked ? 'success' : 'error');
+  }
+
+  function openPartnerModal() {
+    document.getElementById('partnerId').value = '';
+    document.getElementById('partnerName').value = '';
+    document.getElementById('partnerLogo').value = '';
+    document.getElementById('partnerPhone').value = '';
+    document.getElementById('partnerCharge').value = 60;
+    document.getElementById('partnerTime').value = '';
+    document.getElementById('partnerWebsite').value = '';
+    document.getElementById('partnerDesc').value = '';
+    document.getElementById('partnerActive').checked = true;
+    document.getElementById('partnerShowInCheckout').checked = true;
+    
+    // রিসেট লোগো
+    removeLogo();
+    switchLogoMode('upload');
+    currentLogoMode = 'upload';
+    
+    document.getElementById('modalTitle').textContent = 'নতুন ডেলিভারি পার্টনার';
+    document.getElementById('partnerModal').classList.add('show');
+  }
+
+  function editPartner(id) {
+    const p = getPartners().find(x => x.id === id);
+    if (!p) return;
+
+    document.getElementById('partnerId').value = p.id;
+    document.getElementById('partnerName').value = p.name;
+    document.getElementById('partnerPhone').value = p.phone || '';
+    document.getElementById('partnerCharge').value = p.charge || 0;
+    document.getElementById('partnerTime').value = p.time || '';
+    document.getElementById('partnerWebsite').value = p.website || '';
+    document.getElementById('partnerDesc').value = p.desc || '';
+    document.getElementById('partnerActive').checked = p.active;
+    document.getElementById('partnerShowInCheckout').checked = p.showInCheckout !== false;
+
+    // ✅ লোগো হ্যান্ডেল
+    removeLogo();
+    if (p.logo) {
+      // Base64 হলে file mode, URL হলে URL mode
+      if (p.logo.startsWith('data:')) {
+        switchLogoMode('upload');
+        currentLogoMode = 'upload';
+        currentLogoData = p.logo;
+        currentLogoSource = 'file';
+        updatePreview(p.logo);
+        const dz = document.getElementById('logoDropZone');
+        dz.classList.add('has-file');
+        dz.innerHTML = `
+          <i class="fa-solid fa-circle-check" style="color:var(--green-600)"></i>
+          <strong>লোগো সেভ করা আছে</strong>
+          <small>ক্লিক করে বদলান</small>
+        `;
+      } else {
+        switchLogoMode('url');
+        currentLogoMode = 'url';
+        document.getElementById('partnerLogo').value = p.logo;
+        currentLogoData = p.logo;
+        currentLogoSource = 'url';
+        updatePreview(p.logo);
+      }
+    } else {
+      switchLogoMode('upload');
+      currentLogoMode = 'upload';
+    }
+
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + p.name;
+    document.getElementById('partnerModal').classList.add('show');
+  }
+
+  function savePartner() {
+    const id = document.getElementById('partnerId').value;
+    const name = document.getElementById('partnerName').value.trim();
+    if (!name) { showToast('কোম্পানির নাম দিন', 'error'); return; }
+
+    // ✅ লোগো ভ্যালু — সোর্স অনুযায়ী
+    let logoValue = '';
+    if (currentLogoSource === 'file' && currentLogoData) {
+      logoValue = currentLogoData; // Base64
+    } else if (currentLogoSource === 'url') {
+      logoValue = document.getElementById('partnerLogo').value.trim();
+    }
+
+    const data = {
+      name,
+      logo: logoValue,
+      phone: document.getElementById('partnerPhone').value.trim(),
+      charge: +document.getElementById('partnerCharge').value || 0,
+      time: document.getElementById('partnerTime').value.trim(),
+      website: document.getElementById('partnerWebsite').value.trim(),
+      desc: document.getElementById('partnerDesc').value.trim(),
+      active: document.getElementById('partnerActive').checked,
+      showInCheckout: document.getElementById('partnerShowInCheckout').checked
+    };
+
+    // localStorage size চেক (Base64 বড় হলে সমস্যা হতে পারে)
+    try {
+      const list = getPartners();
+      if (id) {
+        const idx = list.findIndex(x => x.id === +id);
+        list[idx] = { ...list[idx], ...data };
+      } else {
+        list.push({ id: Date.now(), ...data });
+      }
+      savePartners(list);
+      closeModal('partnerModal');
+      render();
+      showToast('সেভ হয়েছে ✅', 'success');
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        showToast('স্টোরেজ পূর্ণ! লোগোর সাইজ কমিয়ে আবার চেষ্টা করুন', 'error');
+      } else {
+        showToast('সেভে সমস্যা: ' + e.message, 'error');
+      }
+      console.error(e);
+    }
+  }
+
+  function deletePartner(id) {
+    if (!confirm('ডিলিট করবেন?')) return;
+    savePartners(getPartners().filter(x => x.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    getPartners();
+    render();
+  });
+</script>
+</body>
+</html>

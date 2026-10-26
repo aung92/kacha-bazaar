@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ডেলিভারি জোন — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .zone-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .zone-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      transition: all 0.2s;
+      position: relative;
+    }
+    .zone-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+    }
+    .zone-card.inactive {
+      opacity: 0.6;
+      background: var(--gray-50);
+    }
+    .zone-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .zone-card-head h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .zone-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .zone-badge.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .zone-badge.inactive {
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+    .zone-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .zone-info-row:last-of-type { border-bottom: none; }
+    .zone-info-row span:first-child { color: var(--gray-500); }
+    .zone-info-row span:last-child { font-weight: 600; color: var(--gray-900); }
+    .zone-charge {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--green-700);
+    }
+    .zone-areas {
+      font-size: 12px;
+      color: var(--gray-600);
+      background: var(--gray-50);
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      line-height: 1.5;
+      max-height: 60px;
+      overflow: hidden;
+    }
+    .zone-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--gray-200);
+    }
+    .zone-actions button {
+      flex: 1;
+      padding: 7px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .zone-actions .btn-edit {
+      background: var(--green-50);
+      color: var(--green-700);
+      border: 1px solid var(--green-100);
+    }
+    .zone-actions .btn-edit:hover {
+      background: var(--green-600);
+      color: #fff;
+    }
+    .zone-actions .btn-toggle {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-200);
+    }
+    .zone-actions .btn-toggle:hover {
+      background: var(--gray-200);
+    }
+    .zone-actions .btn-del {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      flex: 0.5;
+    }
+    .zone-actions .btn-del:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .stat-mini {
+      background: #fff;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-mini .icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .stat-mini .info strong {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-900);
+      line-height: 1.1;
+    }
+    .stat-mini .info small {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .zone-card-grid { grid-template-columns: 1fr; }
+    }
+
+    /* রেঞ্জ স্লাইডার স্টাইল (এলাকা সাজেশন) */
+    .area-chip {
+      display: inline-block;
+      background: var(--gray-100);
+      color: var(--gray-700);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      margin: 2px;
+      cursor: pointer;
+    }
+    .area-chip:hover {
+      background: var(--green-100);
+      color: var(--green-700);
+    }
+  </style>
+</head>
+<body data-title="ডেলিভারি জোন">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🚚 ডেলিভারি জোন</h1>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="exportZones()">
+            <i class="fa-solid fa-download"></i> CSV
+          </button>
+          <button class="btn btn-primary" onclick="openZoneModal()">
+            <i class="fa-solid fa-plus"></i> নতুন জোন
+          </button>
+        </div>
+      </div>
+
+      <!-- স্ট্যাটস -->
+      <div class="stats-row">
+        <div class="stat-mini">
+          <div class="icon-wrap" style="background:#dbeafe; color:#1e40af;">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+          <div class="info">
+            <strong id="statTotalZones">০</strong>
+            <small>মোট জোন</small>
+          </div>
+        </div>
+        <div class="stat-mini">
+          <div class="icon-wrap" style="background:#dcfce7; color:#15803d;">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="info">
+            <strong id="statActiveZones">০</strong>
+            <small>সক্রিয় জোন</small>
+          </div>
+        </div>
+        <div class="stat-mini">
+          <div class="icon-wrap" style="background:#fef3c7; color:#b45309;">
+            <i class="fa-solid fa-taka-sign"></i>
+          </div>
+          <div class="info">
+            <strong id="statAvgCharge">৳০</strong>
+            <small>গড় ডেলিভারি চার্জ</small>
+          </div>
+        </div>
+        <div class="stat-mini">
+          <div class="icon-wrap" style="background:#e9d5ff; color:#6b21a8;">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div class="info">
+            <strong id="statAreas">০</strong>
+            <small>মোট এরিয়া</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- জোন কার্ড গ্রিড -->
+      <div id="zonesGrid" class="zone-card-grid"></div>
+
+      <!-- কোনো জোন না থাকলে -->
+      <div id="emptyState" style="display:none; background:#fff; border-radius:12px; padding:60px 20px; text-align:center; box-shadow:var(--shadow-sm);">
+        <i class="fa-solid fa-map-location" style="font-size:56px; color:var(--gray-300); margin-bottom:16px;"></i>
+        <h3 style="font-size:18px; margin-bottom:6px;">কোনো জোন নেই</h3>
+        <p style="color:var(--gray-500); margin-bottom:20px; font-size:14px;">নতুন জোন যোগ করে ডেলিভারি চার্জ কাস্টমাইজ করুন।</p>
+        <button class="btn btn-primary" onclick="openZoneModal()">
+          <i class="fa-solid fa-plus"></i> প্রথম জোন তৈরি করুন
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="zoneModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন জোন</h3>
+      <button class="close-modal" onclick="closeModal('zoneModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="zoneId">
+
+      <div class="form-row single">
+        <div class="form-group">
+          <label>জোনের নাম <span class="req">*</span></label>
+          <input type="text" id="zoneName" placeholder="যেমন: ঢাকা সিটি, চট্টগ্রাম সিটি">
+          <small>একটি সহজ নাম দিন যা দিয়ে জোন চেনা যায়</small>
+        </div>
+      </div>
+
+      <div class="form-row single">
+        <div class="form-group">
+          <label>এলাকা (কমা দিয়ে)</label>
+          <textarea id="zoneAreas" rows="3" placeholder="মিরপুর, উত্তরা, ধানমন্ডি, বনানী"></textarea>
+          <div style="margin-top:6px;">
+            <small style="display:block; margin-bottom:6px;">দ্রুত যোগ (ক্লিক করুন):</small>
+            <div id="areaSuggestions">
+              <span class="area-chip" onclick="addArea('মিরপুর')">মিরপুর</span>
+              <span class="area-chip" onclick="addArea('উত্তরা')">উত্তরা</span>
+              <span class="area-chip" onclick="addArea('ধানমন্ডি')">ধানমন্ডি</span>
+              <span class="area-chip" onclick="addArea('বনানী')">বনানী</span>
+              <span class="area-chip" onclick="addArea('গুলশান')">গুলশান</span>
+              <span class="area-chip" onclick="addArea('মোহাম্মদপুর')">মোহাম্মদপুর</span>
+              <span class="area-chip" onclick="addArea('চট্টগ্রাম')">চট্টগ্রাম</span>
+              <span class="area-chip" onclick="addArea('সিলেট')">সিলেট</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>ডেলিভারি চার্জ (৳) <span class="req">*</span></label>
+          <input type="number" id="zoneCharge" min="0" step="1" value="60" oninput="updateFreeHint()">
+        </div>
+        <div class="form-group">
+          <label>ফ্রি ডেলিভারি থ্রেশহোল্ড (৳)</label>
+          <input type="number" id="zoneFree" min="0" step="1" value="500" oninput="updateFreeHint()">
+        </div>
+      </div>
+      <div id="freeHint" style="background:#f0fdf4; border-left:3px solid #16a34a; border-radius:6px; padding:8px 12px; font-size:12px; color:#15803d; margin-bottom:16px;">
+        <i class="fa-solid fa-info-circle"></i>
+        <span id="freeHintText">এই জোনে ৳৫০০ এর বেশি অর্ডার করলে ডেলিভারি ফ্রি।</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>ডেলিভারি সময়</label>
+          <input type="text" id="zoneTime" placeholder="যেমন: ১-২ দিন">
+        </div>
+        <div class="form-group">
+          <label>ক্রম (সিরিয়াল)</label>
+          <input type="number" id="zoneOrder" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="form-row single">
+        <div class="form-group">
+          <label>নোট (ঐচ্ছিক)</label>
+          <textarea id="zoneNote" rows="2" placeholder="এই জোনের জন্য বিশেষ নির্দেশনা..."></textarea>
+        </div>
+      </div>
+
+      <label style="display:flex;gap:10px;align-items:center;padding:12px;background:var(--gray-50);border-radius:8px;cursor:pointer;margin-top:12px;">
+        <input type="checkbox" id="zoneActive" checked style="width:18px;height:18px;accent-color:var(--green-600);">
+        <div>
+          <strong style="font-size:13px;">সক্রিয়</strong>
+          <small style="display:block;color:var(--gray-500);font-size:11px;">চেকআউটে এই জোন দেখাবে</small>
+        </div>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('zoneModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveZone()">
+        <i class="fa-solid fa-save"></i> সেভ করুন
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  // ============================================
+  // ডিফল্ট জোন ডেটা
+  // ============================================
+  const DEFAULT_ZONES = [
+    {
+      id: 1,
+      name: 'ঢাকা সিটি',
+      areas: 'মিরপুর, উত্তরা, ধানমন্ডি, বনানী, গুলশান',
+      charge: 60,
+      free: 500,
+      time: '১-২ দিন',
+      order: 1,
+      note: '',
+      active: true
+    },
+    {
+      id: 2,
+      name: 'ঢাকা সাবার্ব',
+      areas: 'সাভার, গাজীপুর, কেরানীগঞ্জ, নারায়ণগঞ্জ',
+      charge: 80,
+      free: 800,
+      time: '২-৩ দিন',
+      order: 2,
+      note: '',
+      active: true
+    },
+    {
+      id: 3,
+      name: 'চট্টগ্রাম',
+      areas: 'আগ্রাবাদ, পাহাড়তলী, চকবাজার, হাটহাজারী',
+      charge: 120,
+      free: 1000,
+      time: '৩-৪ দিন',
+      order: 3,
+      note: '',
+      active: true
+    },
+    {
+      id: 4,
+      name: 'সিলেট',
+      areas: 'জিন্দাবাজার, আম্বরখানা, সিলেট সদর',
+      charge: 130,
+      free: 1200,
+      time: '৩-৫ দিন',
+      order: 4,
+      note: '',
+      active: false
+    }
+  ];
+
+  function getZones() {
+    const stored = AdminStore.get('delivery_zones', null);
+    if (!stored || !Array.isArray(stored) || !stored.length) {
+      AdminStore.set('delivery_zones', DEFAULT_ZONES);
+      return DEFAULT_ZONES;
+    }
+    return stored;
+  }
+  function saveZones(list) {
+    AdminStore.set('delivery_zones', list);
+  }
+
+  // ============================================
+  // স্ট্যাটস আপডেট
+  // ============================================
+  function updateStats(zones) {
+    const total = zones.length;
+    const active = zones.filter(z => z.active).length;
+    const avgCharge = total ? Math.round(zones.reduce((s, z) => s + (z.charge || 0), 0) / total) : 0;
+    const totalAreas = zones.reduce((s, z) => {
+      if (!z.areas) return s;
+      return s + z.areas.split(',').map(a => a.trim()).filter(Boolean).length;
+    }, 0);
+
+    document.getElementById('statTotalZones').textContent = total;
+    document.getElementById('statActiveZones').textContent = active;
+    document.getElementById('statAvgCharge').textContent = formatTk(avgCharge);
+    document.getElementById('statAreas').textContent = totalAreas;
+  }
+
+  // ============================================
+  // জোন কার্ড রেন্ডার
+  // ============================================
+  function render() {
+    const zones = getZones().slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    updateStats(zones);
+
+    const grid = document.getElementById('zonesGrid');
+    const empty = document.getElementById('emptyState');
+
+    if (!zones.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = zones.map(z => `
+      <div class="zone-card ${z.active ? '' : 'inactive'}">
+        <div class="zone-card-head">
+          <h3>📍 ${z.name}</h3>
+          <span class="zone-badge ${z.active ? 'active' : 'inactive'}">
+            ${z.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+          </span>
+        </div>
+
+        <div class="zone-info-row">
+          <span>ডেলিভারি চার্জ</span>
+          <span class="zone-charge">${formatTk(z.charge || 0)}</span>
+        </div>
+        <div class="zone-info-row">
+          <span>ফ্রি ডেলিভারি</span>
+          <span>${z.free ? formatTk(z.free) + '+' : '—'}</span>
+        </div>
+        <div class="zone-info-row">
+          <span>ডেলিভারি সময়</span>
+          <span>${z.time || '—'}</span>
+        </div>
+
+        ${z.areas ? `<div class="zone-areas"><strong>এলাকা:</strong> ${z.areas}</div>` : ''}
+        ${z.note ? `<div style="font-size:11px;color:var(--gray-500);margin-top:6px;"><i class="fa-solid fa-note-sticky"></i> ${z.note}</div>` : ''}
+
+        <div class="zone-actions">
+          <button class="btn-edit" onclick="editZone(${z.id})">
+            <i class="fa-solid fa-pen"></i> এডিট
+          </button>
+          <button class="btn-toggle" onclick="toggleActive(${z.id})">
+            <i class="fa-solid ${z.active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${z.active ? 'বন্ধ' : 'চালু'}
+          </button>
+          <button class="btn-del" onclick="deleteZone(${z.id})" title="ডিলিট">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ============================================
+  // মোডাল — নতুন / এডিট
+  // ============================================
+  function openZoneModal() {
+    document.getElementById('zoneId').value = '';
+    document.getElementById('zoneName').value = '';
+    document.getElementById('zoneAreas').value = '';
+    document.getElementById('zoneCharge').value = 60;
+    document.getElementById('zoneFree').value = 500;
+    document.getElementById('zoneTime').value = '১-২ দিন';
+    document.getElementById('zoneOrder').value = getZones().length + 1;
+    document.getElementById('zoneNote').value = '';
+    document.getElementById('zoneActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন জোন';
+    updateFreeHint();
+    document.getElementById('zoneModal').classList.add('show');
+    setTimeout(() => document.getElementById('zoneName').focus(), 100);
+  }
+
+  function editZone(id) {
+    const z = getZones().find(x => x.id === id);
+    if (!z) return;
+    document.getElementById('zoneId').value = z.id;
+    document.getElementById('zoneName').value = z.name;
+    document.getElementById('zoneAreas').value = z.areas || '';
+    document.getElementById('zoneCharge').value = z.charge || 0;
+    document.getElementById('zoneFree').value = z.free || 0;
+    document.getElementById('zoneTime').value = z.time || '';
+    document.getElementById('zoneOrder').value = z.order || 0;
+    document.getElementById('zoneNote').value = z.note || '';
+    document.getElementById('zoneActive').checked = z.active !== false;
+    document.getElementById('modalTitle').textContent = 'এডিট জোন — ' + z.name;
+    updateFreeHint();
+    document.getElementById('zoneModal').classList.add('show');
+  }
+
+  function addArea(area) {
+    const ta = document.getElementById('zoneAreas');
+    const current = ta.value.trim();
+    if (current) {
+      // ডুপ্লিকেট চেক
+      const areas = current.split(',').map(a => a.trim()).filter(Boolean);
+      if (!areas.includes(area)) {
+        ta.value = current + ', ' + area;
+      }
+    } else {
+      ta.value = area;
+    }
+  }
+
+  function updateFreeHint() {
+    const free = +document.getElementById('zoneFree').value || 0;
+    const text = document.getElementById('freeHintText');
+    if (free > 0) {
+      text.textContent = `এই জোনে ${formatTk(free)} এর বেশি অর্ডার করলে ডেলিভারি ফ্রি।`;
+    } else {
+      text.textContent = 'ফ্রি ডেলিভারি নেই — সব অর্ডারে চার্জ প্রযোজ্য।';
+    }
+  }
+
+  function saveZone() {
+    const id = document.getElementById('zoneId').value;
+    const name = document.getElementById('zoneName').value.trim();
+    const charge = +document.getElementById('zoneCharge').value;
+
+    if (!name) { showToast('জোনের নাম দিন', 'error'); return; }
+    if (charge < 0) { showToast('ডেলিভারি চার্জ সঠিকভাবে দিন', 'error'); return; }
+
+    // নাম ডুপ্লিকেট চেক
+    const zones = getZones();
+    if (!id && zones.some(z => z.name.toLowerCase() === name.toLowerCase())) {
+      showToast('এই নামে জোন আগে থেকেই আছে', 'error');
+      return;
+    }
+
+    const data = {
+      name,
+      areas: document.getElementById('zoneAreas').value.trim(),
+      charge,
+      free: +document.getElementById('zoneFree').value || 0,
+      time: document.getElementById('zoneTime').value.trim(),
+      order: +document.getElementById('zoneOrder').value || 0,
+      note: document.getElementById('zoneNote').value.trim(),
+      active: document.getElementById('zoneActive').checked
+    };
+
+    if (id) {
+      const idx = zones.findIndex(z => z.id === +id);
+      if (idx < 0) return;
+      zones[idx] = { ...zones[idx], ...data };
+      showToast('জোন আপডেট হয়েছে ✅', 'success');
+    } else {
+      const newId = Math.max(0, ...zones.map(z => z.id || 0)) + 1;
+      zones.push({ id: newId, ...data });
+      showToast('নতুন জোন যোগ হয়েছে ✅', 'success');
+    }
+
+    saveZones(zones);
+    closeModal('zoneModal');
+    render();
+  }
+
+  function toggleActive(id) {
+    const zones = getZones();
+    const idx = zones.findIndex(z => z.id === id);
+    if (idx < 0) return;
+    zones[idx].active = !zones[idx].active;
+    saveZones(zones);
+    showToast(zones[idx].active ? 'জোন চালু ✅' : 'জোন বন্ধ', zones[idx].active ? 'success' : 'error');
+    render();
+  }
+
+  function deleteZone(id) {
+    const z = getZones().find(x => x.id === id);
+    if (!z) return;
+    if (!confirm(`"${z.name}" জোনটি ডিলিট করবেন?`)) return;
+    saveZones(getZones().filter(x => x.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  // ============================================
+  // CSV এক্সপোর্ট
+  // ============================================
+  function exportZones() {
+    const zones = getZones();
+    if (!zones.length) { showToast('কোনো জোন নেই', 'error'); return; }
+
+    const rows = [['ID', 'Name', 'Areas', 'Charge', 'FreeThreshold', 'Time', 'Order', 'Active', 'Note']];
+    zones.forEach(z => rows.push([
+      z.id, z.name, z.areas || '', z.charge || 0, z.free || 0,
+      z.time || '', z.order || 0, z.active ? 'Yes' : 'No', z.note || ''
+    ]));
+
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'delivery-zones-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    showToast('CSV ডাউনলোড ✅', 'success');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  // ============================================
+  // INIT
+  // ============================================
+  document.addEventListener('DOMContentLoaded', () => {
+    getZones(); // সিড
+    render();
+
+    // মোডাল ব্যাকড্রপ ক্লিক
+    document.getElementById('zoneModal').addEventListener('click', (e) => {
+      if (e.target.id === 'zoneModal') closeModal('zoneModal');
+    });
+
+    // ESC কী
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal('zoneModal');
+    });
+  });
+</script>
+</body>
+</html>

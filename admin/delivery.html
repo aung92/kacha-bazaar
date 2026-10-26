@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ডেলিভারি ম্যান — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--gray-300);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--green-600);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+    }
+  </style>
+</head>
+<body data-title="ডেলিভারি ম্যান">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🛵 ডেলিভারি ম্যান</h1>
+        <button class="btn btn-primary" onclick="openDeliveryModal()">
+          <i class="fa-solid fa-plus"></i> নতুন ডেলিভারি ম্যান
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="font-size:13px; color:var(--gray-600); padding:14px 20px;">
+          <i class="fa-solid fa-info-circle" style="color:var(--green-600)"></i>
+          <strong>চেকআউটে দেখাবে</strong> টগল On থাকলে গ্রাহক চেকআউটে সেই ডেলিভারি ম্যানকে বেছে নিতে পারবে। (শর্ত: Settings → Delivery → "ডেলিভারি পার্টনার সিলেকশন" On থাকতে হবে)
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>নাম</th>
+                  <th>ফোন</th>
+                  <th>এরিয়া</th>
+                  <th>মোট ডেলিভারি</th>
+                  <th>চেকআউটে দেখাবে</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="deliveryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deliveryModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ডেলিভারি ম্যান</h3>
+      <button class="close-modal" onclick="closeModal('deliveryModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="deliveryId">
+      <div class="form-row single">
+        <div class="form-group"><label>নাম *</label><input type="text" id="deliveryName" placeholder="রহিম মিয়া"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>ফোন *</label><input type="tel" id="deliveryPhone" placeholder="017XXXXXXXX"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>এরিয়া</label><input type="text" id="deliveryArea" placeholder="মিরপুর, ঢাকা"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>ছবি URL (ঐচ্ছিক)</label><input type="url" id="deliveryImage" placeholder="https://..."></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="deliveryActive" checked style="width:auto;accent-color:var(--green-600)">
+        <span>সক্রিয় (অ্যাক্টিভ)</span>
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="deliveryShowInCheckout" checked style="width:auto;accent-color:var(--green-600)">
+        <span>চেকআউটে দেখাবে</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('deliveryModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveDelivery()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEMO_DELIVERY = [
+    { id: 1, name: 'রহিম মিয়া', phone: '01711223344', area: 'মিরপুর, ঢাকা', deliveries: 45, active: true, showInCheckout: true, img: '' },
+    { id: 2, name: 'করিম আলী', phone: '01811223344', area: 'উত্তরা, ঢাকা', deliveries: 30, active: true, showInCheckout: true, img: '' },
+    { id: 3, name: 'সেলিম হোসেন', phone: '01911223344', area: 'ধানমন্ডি, ঢাকা', deliveries: 15, active: true, showInCheckout: false, img: '' }
+  ];
+
+  function getDeliveryMen() {
+    return AdminStore.get('delivery_men', DEMO_DELIVERY);
+  }
+  function saveDeliveryMen(list) {
+    AdminStore.set('delivery_men', list);
+  }
+
+  function render() {
+    const list = getDeliveryMen();
+    const body = document.getElementById('deliveryBody');
+
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-500)">কোনো ডেলিভারি ম্যান নেই</td></tr>';
+      return;
+    }
+
+    body.innerHTML = list.map(d => {
+      const showInCheckout = d.showInCheckout !== false;
+      return `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#0891b2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+                ${d.name[0]}
+              </div>
+              <strong>${d.name}</strong>
+            </div>
+          </td>
+          <td>${d.phone}</td>
+          <td>${d.area || '—'}</td>
+          <td><span class="badge badge-active">${d.deliveries || 0}টি</span></td>
+          <td>
+            <label class="toggle-switch" title="${showInCheckout ? 'চেকআউটে দেখাবে' : 'চেকআউটে দেখাবে না'}">
+              <input type="checkbox" ${showInCheckout ? 'checked' : ''} onchange="toggleShowInCheckout(${d.id}, this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td><span class="badge ${d.active ? 'badge-active' : 'badge-inactive'}">${d.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+          <td class="actions">
+            <button onclick="editDelivery(${d.id})"><i class="fa-solid fa-pen"></i></button>
+            <button class="del" onclick="deleteDelivery(${d.id})"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ✅ ইনলাইন টগল আপডেট
+  function toggleShowInCheckout(id, checked) {
+    const list = getDeliveryMen();
+    const idx = list.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    list[idx].showInCheckout = checked;
+    saveDeliveryMen(list);
+    showToast(checked ? 'চেকআউটে দেখাবে ✅' : 'চেকআউটে দেখাবে না', checked ? 'success' : 'error');
+  }
+
+  function openDeliveryModal() {
+    document.getElementById('deliveryId').value = '';
+    document.getElementById('deliveryName').value = '';
+    document.getElementById('deliveryPhone').value = '';
+    document.getElementById('deliveryArea').value = '';
+    document.getElementById('deliveryImage').value = '';
+    document.getElementById('deliveryActive').checked = true;
+    document.getElementById('deliveryShowInCheckout').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন ডেলিভারি ম্যান';
+    document.getElementById('deliveryModal').classList.add('show');
+  }
+
+  function editDelivery(id) {
+    const d = getDeliveryMen().find(x => x.id === id);
+    if (!d) return;
+    document.getElementById('deliveryId').value = d.id;
+    document.getElementById('deliveryName').value = d.name;
+    document.getElementById('deliveryPhone').value = d.phone;
+    document.getElementById('deliveryArea').value = d.area || '';
+    document.getElementById('deliveryImage').value = d.img || '';
+    document.getElementById('deliveryActive').checked = d.active;
+    document.getElementById('deliveryShowInCheckout').checked = d.showInCheckout !== false;
+    document.getElementById('modalTitle').textContent = 'এডিট করুন';
+    document.getElementById('deliveryModal').classList.add('show');
+  }
+
+  function saveDelivery() {
+    const id = document.getElementById('deliveryId').value;
+    const name = document.getElementById('deliveryName').value.trim();
+    const phone = document.getElementById('deliveryPhone').value.trim();
+    const area = document.getElementById('deliveryArea').value.trim();
+    const img = document.getElementById('deliveryImage').value.trim();
+    const active = document.getElementById('deliveryActive').checked;
+    const showInCheckout = document.getElementById('deliveryShowInCheckout').checked;
+
+    if (!name || !phone) { showToast('নাম ও ফোন দিন', 'error'); return; }
+
+    const list = getDeliveryMen();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], name, phone, area, img, active, showInCheckout };
+    } else {
+      list.push({ id: Date.now(), name, phone, area, img, deliveries: 0, active, showInCheckout });
+    }
+    saveDeliveryMen(list);
+    closeModal('deliveryModal');
+    render();
+    showToast('সেভ হয়েছে ✅', 'success');
+  }
+
+  function deleteDelivery(id) {
+    if (!confirm('ডিলিট করবেন?')) return;
+    saveDeliveryMen(getDeliveryMen().filter(x => x.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কলব্যাক রিকোয়েস্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="কলব্যাক রিকোয়েস্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📞 কলব্যাক রিকোয়েস্ট</h1>
+        <span class="badge badge-pending" id="pendingBadge" style="font-size:13px; padding:6px 14px;">0টি অপেক্ষমাণ</span>
+      </div>
+
+      <div class="filter-bar">
+        <select id="filterStatus">
+          <option value="">সব স্ট্যাটাস</option>
+          <option value="pending">অপেক্ষমাণ</option>
+          <option value="called">কল করা হয়েছে</option>
+          <option value="resolved">সমাধান</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>নাম</th><th>ফোন</th><th>বিষয়</th><th>সময়</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="cbBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_CB = [
+    { id: 1, name: 'রফিক আহমেদ', phone: '01711111111', subject: 'পণ্য সম্পর্কে জানতে চাই', time: '2025-01-21T14:00:00', status: 'pending' },
+    { id: 2, name: 'সাদিয়া ইসলাম', phone: '01722222222', subject: 'অর্ডার সমস্যা', time: '2025-01-20T16:30:00', status: 'called' }
+  ];
+
+  function getCB() { return AdminStore.get('callback_requests', DEFAULT_CB); }
+  function saveCB(l) { AdminStore.set('callback_requests', l); }
+
+  function render() {
+    const status = document.getElementById('filterStatus').value;
+    let list = getCB();
+    if (status) list = list.filter(c => c.status === status);
+    const pending = getCB().filter(c => c.status === 'pending').length;
+    document.getElementById('pendingBadge').textContent = pending + 'টি অপেক্ষমাণ';
+
+    document.getElementById('cbBody').innerHTML = list.map(c => `
+      <tr>
+        <td><strong>${c.name}</strong></td>
+        <td><a href="tel:${c.phone}" style="color:var(--green-600)"><i class="fa-solid fa-phone"></i> ${c.phone}</a></td>
+        <td>${c.subject}</td>
+        <td>${new Date(c.time).toLocaleString('bn-BD', { dateStyle: 'short', timeStyle: 'short' })}</td>
+        <td><span class="badge ${c.status === 'pending' ? 'badge-pending' : c.status === 'called' ? 'badge-confirmed' : 'badge-active'}">${c.status === 'pending' ? 'অপেক্ষমাণ' : c.status === 'called' ? 'কল করা হয়েছে' : 'সমাধান'}</span></td>
+        <td class="actions">
+          ${c.status === 'pending' ? `<button onclick="setStatus(${c.id}, 'called')" title="কল দিন"><i class="fa-solid fa-phone"></i></button>` : ''}
+          ${c.status !== 'resolved' ? `<button onclick="setStatus(${c.id}, 'resolved')" title="সমাধান"><i class="fa-solid fa-check"></i></button>` : ''}
+          <button class="del" onclick="deleteCB(${c.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো রিকোয়েস্ট নেই</td></tr>';
+  }
+
+  function setStatus(id, status) {
+    const list = getCB();
+    const idx = list.findIndex(c => c.id === id);
+    if (idx < 0) return;
+    list[idx].status = status;
+    saveCB(list);
+    render();
+    showToast('স্ট্যাটাস আপডেট ✅', 'success');
+  }
+
+  function deleteCB(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveCB(getCB().filter(c => c.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    document.getElementById('filterStatus').addEventListener('change', render);
+  });
+</script>
+</body>
+</html>

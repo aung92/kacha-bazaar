@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>পণ্য ট্যাগ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .tag-chip { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-right:6px; }
+    .tag-new { background:#dcfce7; color:#15803d; }
+    .tag-bestseller { background:#fef3c7; color:#b45309; }
+    .tag-organic { background:#dbeafe; color:#1e40af; }
+    .tag-discount { background:#fee2e2; color:#991b1b; }
+    .tag-premium { background:#e9d5ff; color:#6b21a8; }
+  </style>
+</head>
+<body data-title="পণ্য ট্যাগ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🏷️ পণ্য ট্যাগ</h1>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-head"><h2>ট্যাগ তৈরি / ম্যানেজ</h2></div>
+        <div class="card-body">
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="tagName" placeholder="নতুন ট্যাগ (যেমন: বেস্ট সেলার)" style="flex:1; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:13px;">
+            <select id="tagColor" style="padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:13px;">
+              <option value="tag-new">সবুজ (New)</option>
+              <option value="tag-bestseller">হলুদ (Best Seller)</option>
+              <option value="tag-organic">নীল (Organic)</option>
+              <option value="tag-discount">লাল (Discount)</option>
+              <option value="tag-premium">বেগুনি (Premium)</option>
+            </select>
+            <button class="btn btn-primary" onclick="addTag()"><i class="fa-solid fa-plus"></i> যোগ</button>
+          </div>
+          <div id="tagList" style="margin-top:16px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>পণ্যে ট্যাগ দিন</h2></div>
+        <div class="card-body">
+          <select id="productSelect" onchange="renderProductTags()" style="width:100%; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:14px; margin-bottom:14px;">
+            <option value="">— পণ্য নির্বাচন —</option>
+          </select>
+          <div id="productTagsArea" style="padding:14px; background:var(--gray-50); border-radius:8px; min-height:60px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_TAGS = [
+    { id: 1, name: 'নতুন', color: 'tag-new' },
+    { id: 2, name: 'বেস্ট সেলার', color: 'tag-bestseller' },
+    { id: 3, name: 'অর্গানিক', color: 'tag-organic' },
+    { id: 4, name: 'ডিসকাউন্ট', color: 'tag-discount' }
+  ];
+
+  function getTags() { return AdminStore.get('product_tags', DEFAULT_TAGS); }
+  function saveTags(l) { AdminStore.set('product_tags', l); }
+  function getProductTags() { return AdminStore.get('product_tag_map', {}); }
+  function saveProductTags(d) { AdminStore.set('product_tag_map', d); }
+  function getProducts() { return AdminStore.get('products', DEMO_PRODUCTS); }
+
+  function renderTags() {
+    document.getElementById('tagList').innerHTML = getTags().map(t => `
+      <span class="tag-chip ${t.color}" style="margin-bottom:8px;">
+        ${t.name}
+        <i class="fa-solid fa-xmark" style="margin-left:6px; cursor:pointer;" onclick="deleteTag(${t.id})"></i>
+      </span>
+    `).join('') || '<p style="color:var(--gray-500); font-size:13px;">কোনো ট্যাগ নেই</p>';
+  }
+
+  function addTag() {
+    const name = document.getElementById('tagName').value.trim();
+    if (!name) return;
+    const list = getTags();
+    list.push({ id: Date.now(), name, color: document.getElementById('tagColor').value });
+    saveTags(list);
+    document.getElementById('tagName').value = '';
+    renderTags();
+    showToast('ট্যাগ যোগ ✅', 'success');
+  }
+
+  function deleteTag(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveTags(getTags().filter(t => t.id !== id));
+    renderTags();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function renderProductTags() {
+    const pid = document.getElementById('productSelect').value;
+    const area = document.getElementById('productTagsArea');
+    if (!pid) { area.innerHTML = '<p style="color:var(--gray-500); font-size:13px;">পণ্য নির্বাচন করুন</p>'; return; }
+    const map = getProductTags();
+    const activeIds = map[pid] || [];
+    area.innerHTML = getTags().map(t => `
+      <label style="display:inline-flex; align-items:center; gap:6px; margin-right:14px; margin-bottom:8px; font-size:13px; cursor:pointer;">
+        <input type="checkbox" ${activeIds.includes(t.id) ? 'checked' : ''} onchange="toggleProductTag(${t.id}, this.checked)" style="width:auto; accent-color:var(--green-600);">
+        <span class="tag-chip ${t.color}">${t.name}</span>
+      </label>
+    `).join('');
+  }
+
+  function toggleProductTag(tagId, checked) {
+    const pid = document.getElementById('productSelect').value;
+    const map = getProductTags();
+    if (!map[pid]) map[pid] = [];
+    if (checked) {
+      if (!map[pid].includes(tagId)) map[pid].push(tagId);
+    } else {
+      map[pid] = map[pid].filter(t => t !== tagId);
+    }
+    saveProductTags(map);
+    showToast('আপডেট ✅', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderTags();
+    const sel = document.getElementById('productSelect');
+    getProducts().forEach(p => sel.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`));
+  });
+</script>
+</body>
+</html>

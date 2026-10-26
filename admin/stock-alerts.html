@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>স্টক অ্যালার্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="স্টক অ্যালার্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🔔 স্টক অ্যালার্ট</h1>
+        <button class="btn btn-outline" onclick="notifyAll()"><i class="fa-solid fa-bell"></i> সবাইকে জানান</button>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-info"><h3>মোট অ্যালার্ট</h3><strong id="statTotal">০</strong></div><div class="stat-icon blue"><i class="fa-solid fa-bell"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>অপেক্ষমাণ</h3><strong id="statPending">০</strong></div><div class="stat-icon orange"><i class="fa-solid fa-clock"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>নোটিফাইড</h3><strong id="statNotified">০</strong></div><div class="stat-icon green"><i class="fa-solid fa-check"></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>কাস্টমার স্টক রিকোয়েস্ট</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>পণ্য</th><th>কাস্টমার</th><th>ফোন</th><th>তারিখ</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="alertBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_ALERTS = [
+    { id: 1, product: 'পাহাড়ি জুম মধু', customer: 'রফিক আহমেদ', phone: '01711111111', date: '2025-01-21', status: 'pending' },
+    { id: 2, product: 'পাহাড়ি কমলা', customer: 'সাদিয়া ইসলাম', phone: '01722222222', date: '2025-01-20', status: 'notified' }
+  ];
+
+  function getAlerts() { return AdminStore.get('stock_alerts', DEFAULT_ALERTS); }
+  function saveAlerts(l) { AdminStore.set('stock_alerts', l); }
+
+  function render() {
+    const alerts = getAlerts();
+    document.getElementById('statTotal').textContent = alerts.length;
+    document.getElementById('statPending').textContent = alerts.filter(a => a.status === 'pending').length;
+    document.getElementById('statNotified').textContent = alerts.filter(a => a.status === 'notified').length;
+
+    document.getElementById('alertBody').innerHTML = alerts.map(a => `
+      <tr>
+        <td><strong>${a.product}</strong></td>
+        <td>${a.customer}</td>
+        <td>${a.phone}</td>
+        <td>${formatDate(a.date)}</td>
+        <td><span class="badge ${a.status === 'notified' ? 'badge-active' : 'badge-pending'}">${a.status === 'notified' ? 'নোটিফাইড' : 'অপেক্ষমাণ'}</span></td>
+        <td class="actions">
+          ${a.status === 'pending' ? `<button onclick="notifyOne(${a.id})" title="নোটিফাই"><i class="fa-solid fa-bell"></i></button>` : ''}
+          <button class="del" onclick="deleteAlert(${a.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো অ্যালার্ট নেই</td></tr>';
+  }
+
+  function notifyOne(id) {
+    const alerts = getAlerts();
+    const idx = alerts.findIndex(a => a.id === id);
+    if (idx < 0) return;
+    alerts[idx].status = 'notified';
+    saveAlerts(alerts);
+    render();
+    showToast(`${alerts[idx].customer}-কে নোটিফাই ✅`, 'success');
+  }
+
+  function notifyAll() {
+    const alerts = getAlerts();
+    const pending = alerts.filter(a => a.status === 'pending');
+    if (!pending.length) { showToast('কোনো অপেক্ষমাণ অ্যালার্ট নেই', 'error'); return; }
+    if (!confirm(`${pending.length} জনকে নোটিফাই করবেন?`)) return;
+    alerts.forEach(a => { if (a.status === 'pending') a.status = 'notified'; });
+    saveAlerts(alerts);
+    render();
+    showToast(`${pending.length} জনকে নোটিফাই ✅`, 'success');
+  }
+
+  function deleteAlert(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveAlerts(getAlerts().filter(a => a.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  render();
+</script>
+</body>
+</html>

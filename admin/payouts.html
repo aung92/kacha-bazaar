@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কৃষক পেমেন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="কৃষক পেমেন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>💸 কৃষক পেমেন্ট (Payouts)</h1>
+      </div>
+      
+      <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+        <div class="stat-card">
+          <div class="stat-info"><h3>মোট বিক্রি (কৃষক)</h3><strong id="totalSales">৳০</strong></div>
+          <div class="stat-icon green"><i class="fa-solid fa-chart-line"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><h3>মোট পেইড</h3><strong id="totalPaid">৳০</strong></div>
+          <div class="stat-icon blue"><i class="fa-solid fa-check-circle"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><h3>বাকি আছে</h3><strong id="totalDue" style="color:var(--red-500)">৳০</strong></div>
+          <div class="stat-icon red"><i class="fa-solid fa-clock"></i></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>কৃষক</th>
+                  <th>জেলা</th>
+                  <th>মোট আয় (৳)</th>
+                  <th>পরিশোধিত (৳)</th>
+                  <th>বাকি (৳)</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="payoutBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="payModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <h3>পেমেন্ট দিন</h3>
+      <button class="close-modal" onclick="closeModal('payModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="payFarmerId">
+      <p style="margin-bottom:16px">কৃষক: <strong id="payFarmerName"></strong></p>
+      <div class="form-group">
+        <label>টাকার পরিমাণ (৳)</label>
+        <input type="number" id="payAmount" min="1">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('payModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="submitPayment()">কনফার্ম</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const FARMERS = [
+    { id: 'f1', name: 'করিম মিয়া', district: 'rangamati' },
+    { id: 'f2', name: 'সুবল চাকমা', district: 'rangamati' },
+    { id: 'f3', name: 'রতন ত্রিপুরা', district: 'khagrachari' },
+    { id: 'f4', name: 'মেমং মারমা', district: 'bandarban' },
+    { id: 'f5', name: 'অংসুই প্রু', district: 'bandarban' },
+    { id: 'f6', name: 'জুম্মন মিয়া', district: 'khagrachari' }
+  ];
+  const DIST_NAMES = { rangamati: 'রাঙ্গামাটি', khagrachari: 'খাগড়াছড়ি', bandarban: 'বান্দরবান' };
+
+  function getOrders() { return AdminStore.get('orders', DEMO_ORDERS); }
+  function getProducts() { return AdminStore.get('products', DEMO_PRODUCTS); }
+
+  function getPayouts() {
+    return AdminStore.get('farmer_payouts', {
+      'f1': { paid: 500 }, 'f3': { paid: 1200 }
+    });
+  }
+  function savePayouts(data) { AdminStore.set('farmer_payouts', data); }
+
+  function calculateStats() {
+    const orders = getOrders().filter(o => o.status === 'delivered'); // শুধু ডেলিভার্ড অর্ডার
+    const products = getProducts();
+    const payouts = getPayouts();
+    
+    const farmerStats = {};
+    FARMERS.forEach(f => farmerStats[f.id] = { totalSales: 0, paid: payouts[f.id]?.paid || 0 });
+
+    orders.forEach(o => {
+      (o.items_detail || []).forEach(it => {
+        const p = products.find(x => x.name === it.name);
+        if (p && p.farmer && farmerStats[p.farmer]) {
+          farmerStats[p.farmer].totalSales += (it.price * it.qty);
+        }
+      });
+    });
+
+    let totalSales = 0, totalPaid = 0, totalDue = 0;
+    const rows = FARMERS.map(f => {
+      const stat = farmerStats[f.id];
+      const due = Math.max(0, stat.totalSales - stat.paid);
+      totalSales += stat.totalSales;
+      totalPaid += stat.paid;
+      totalDue += due;
+      return { ...f, ...stat, due };
+    });
+
+    document.getElementById('totalSales').textContent = formatTk(totalSales);
+    document.getElementById('totalPaid').textContent = formatTk(totalPaid);
+    document.getElementById('totalDue').textContent = formatTk(totalDue);
+
+    document.getElementById('payoutBody').innerHTML = rows.map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${DIST_NAMES[r.district]}</td>
+        <td>${formatTk(r.totalSales)}</td>
+        <td><span style="color:var(--green-600)">${formatTk(r.paid)}</span></td>
+        <td><span style="color:${r.due > 0 ? 'var(--red-500)' : 'var(--gray-500)'}; font-weight:700">${formatTk(r.due)}</span></td>
+        <td class="actions">
+          ${r.due > 0 ? `<button class="btn btn-sm btn-primary" onclick="openPayModal('${r.id}', '${r.name}')">পেমেন্ট দিন</button>` : '<span class="badge badge-active">পরিশোধিত</span>'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openPayModal(id, name) {
+    document.getElementById('payFarmerId').value = id;
+    document.getElementById('payFarmerName').textContent = name;
+    document.getElementById('payAmount').value = '';
+    document.getElementById('payModal').classList.add('show');
+  }
+
+  function submitPayment() {
+    const id = document.getElementById('payFarmerId').value;
+    const amount = +document.getElementById('payAmount').value;
+    if (amount <= 0) { showToast('সঠিক পরিমাণ দিন', 'error'); return; }
+
+    const payouts = getPayouts();
+    payouts[id] = payouts[id] || { paid: 0 };
+    payouts[id].paid += amount;
+    savePayouts(payouts);
+
+    closeModal('payModal');
+    calculateStats();
+    showToast('পেমেন্ট রেকর্ড হয়েছে ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  calculateStats();
+</script>
+</body>
+</html>

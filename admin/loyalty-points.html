@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>লয়্যালটি পয়েন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="লয়্যালটি পয়েন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🌟 লয়্যালটি পয়েন্ট</h1>
+        <button class="btn btn-primary" onclick="openSettingsModal()"><i class="fa-solid fa-gear"></i> সেটিংস</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="background:linear-gradient(135deg,#fef3c7,#fde68a); padding:16px 20px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:15px;">🎁 পয়েন্ট রেট:</strong>
+            <span id="rateInfo" style="font-size:14px;">প্রতি ৳১০০ = ১ পয়েন্ট</span>
+          </div>
+          <div>
+            <strong style="font-size:15px;">💰 রিডিম:</strong>
+            <span id="redeemInfo" style="font-size:14px;">১ পয়েন্ট = ৳১</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 কাস্টমার বা ফোন...">
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>কাস্টমার</th><th>ফোন</th><th>মোট পয়েন্ট</th><th>ব্যবহৃত</th><th>ব্যালেন্স</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="pointsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head"><h3>পয়েন্ট সেটিংস</h3><button class="close-modal" onclick="closeModal('settingsModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row single"><div class="form-group"><label>প্রতি ৳ কত = ১ পয়েন্ট</label><input type="number" id="pointsPerTk" value="100" min="1"></div></div>
+      <div class="form-row single"><div class="form-group"><label>১ পয়েন্ট = কত ৳ (রিডিম)</label><input type="number" id="tkPerPoint" value="1" min="0.01" step="0.01"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('settingsModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveSettings()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_POINTS = {
+    perTk: 100,
+    tkPerPoint: 1,
+    data: [
+      { phone: '01711111111', name: 'রফিক আহমেদ', earned: 42, used: 10 },
+      { phone: '01722222222', name: 'সাদিয়া ইসলাম', earned: 21, used: 0 }
+    ]
+  };
+
+  function getPoints() {
+    return AdminStore.get('loyalty_points', DEFAULT_POINTS);
+  }
+  function savePoints(d) { AdminStore.set('loyalty_points', d); }
+
+  function render() {
+    const data = getPoints();
+    document.getElementById('rateInfo').textContent = `প্রতি ৳${data.perTk} = ১ পয়েন্ট`;
+    document.getElementById('redeemInfo').textContent = `১ পয়েন্ট = ৳${data.tkPerPoint}`;
+
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    let list = data.data;
+    if (search) list = list.filter(p => p.name.toLowerCase().includes(search) || p.phone.includes(search));
+
+    document.getElementById('pointsBody').innerHTML = list.map((p, i) => {
+      const balance = p.earned - p.used;
+      return `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.phone}</td>
+        <td>${p.earned}</td>
+        <td>${p.used}</td>
+        <td><strong style="color:var(--green-700)">${balance} পয়েন্ট</strong></td>
+        <td class="actions">
+          <button onclick="addPoints(${i})" title="পয়েন্ট যোগ"><i class="fa-solid fa-plus"></i></button>
+          <button onclick="redeemPoints(${i})" title="রিডিম"><i class="fa-solid fa-gift"></i></button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো ডেটা নেই</td></tr>';
+  }
+
+  function addPoints(idx) {
+    const amt = prompt('কত পয়েন্ট যোগ করবেন?', '10');
+    if (!amt) return;
+    const data = getPoints();
+    data.data[idx].earned += +amt;
+    savePoints(data);
+    render();
+    showToast(`${amt} পয়েন্ট যোগ ✅`, 'success');
+  }
+
+  function redeemPoints(idx) {
+    const amt = prompt('কত পয়েন্ট রিডিম করবেন?', '10');
+    if (!amt) return;
+    const data = getPoints();
+    const avail = data.data[idx].earned - data.data[idx].used;
+    if (+amt > avail) { showToast('যথেষ্ট পয়েন্ট নেই', 'error'); return; }
+    data.data[idx].used += +amt;
+    savePoints(data);
+    render();
+    showToast(`${amt} পয়েন্ট রিডিম ✅`, 'success');
+  }
+
+  function openSettingsModal() {
+    const d = getPoints();
+    document.getElementById('pointsPerTk').value = d.perTk;
+    document.getElementById('tkPerPoint').value = d.tkPerPoint;
+    document.getElementById('settingsModal').classList.add('show');
+  }
+
+  function saveSettings() {
+    const d = getPoints();
+    d.perTk = +document.getElementById('pointsPerTk').value || 100;
+    d.tkPerPoint = +document.getElementById('tkPerPoint').value || 1;
+    savePoints(d);
+    closeModal('settingsModal');
+    render();
+    showToast('সেটিংস সেভ ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    document.getElementById('searchInput').addEventListener('input', render);
+  });
+</script>
+</body>
+</html>

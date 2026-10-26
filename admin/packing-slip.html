@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>প্যাকিং স্লিপ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* ============ স্ক্রিন ভিউ ============ */
+    .slip-selector {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .slip-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .slip-controls .form-group {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 180px;
+    }
+    .slip-controls .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .slip-controls input,
+    .slip-controls select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .order-picker-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 16px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+    }
+    .order-pick-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .order-pick-item:hover { background: var(--gray-50); }
+    .order-pick-item:last-child { border-bottom: none; }
+    .order-pick-item.selected { background: #f0fdf4; }
+    .order-pick-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green-600);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .order-pick-info { flex: 1; min-width: 0; }
+    .order-pick-info strong {
+      font-size: 13px;
+      display: block;
+      color: var(--gray-900);
+    }
+    .order-pick-info small {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    /* ============ প্রিভিউ এরিয়া ============ */
+    .preview-actions {
+      position: sticky;
+      top: 70px;
+      z-index: 50;
+      background: #fff;
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .preview-actions .info {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-700);
+    }
+    .preview-actions .btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .slip-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(384px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    /* ============ 🖨️ প্যাকিং স্লিপ ডিজাইন ============ */
+    .packing-slip {
+      width: 384px;            /* 4 inch @ 96dpi */
+      height: 576px;           /* 6 inch @ 96dpi */
+      background: #fff;
+      border: 1.5px solid #111;
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+      color: #111;
+      font-size: 11px;
+      line-height: 1.35;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      margin: 0 auto;
+    }
+
+    .ps-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #111;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .ps-header .ps-brand {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .ps-header .ps-brand span { color: #4ade80; }
+    .ps-header .ps-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 8px;
+      background: #fff;
+      color: #111;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ps-order-id-bar {
+      background: #f3f4f6;
+      padding: 5px 12px;
+      border-bottom: 1px dashed #9ca3af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    .ps-order-id-bar strong {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .ps-barcode {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 6px 0 4px;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      height: 52px;
+    }
+    .ps-barcode svg, .ps-barcode img {
+      max-width: 100%;
+      height: 40px;
+    }
+
+    .ps-body {
+      flex: 1;
+      padding: 8px 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ps-section {
+      border: 1px solid #111;
+      border-radius: 4px;
+      padding: 6px 8px;
+    }
+    .ps-section-title {
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+    .ps-to-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111;
+      line-height: 1.2;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    .ps-to-phone {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+    .ps-to-address {
+      font-size: 10.5px;
+      color: #374151;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .ps-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .ps-cod-box {
+      background: #fef3c7;
+      border: 2px solid #d97706;
+      border-radius: 4px;
+      padding: 4px 8px;
+      text-align: center;
+    }
+    .ps-cod-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #92400e;
+      letter-spacing: 0.5px;
+    }
+    .ps-cod-amount {
+      font-size: 18px;
+      font-weight: 800;
+      color: #b45309;
+      line-height: 1.1;
+    }
+
+    .ps-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .ps-items-table th {
+      text-align: left;
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #111;
+      padding: 2px 3px;
+    }
+    .ps-items-table td {
+      padding: 3px 3px;
+      border-bottom: 1px dotted #d1d5db;
+      vertical-align: top;
+    }
+    .ps-items-table td.check {
+      width: 16px;
+      text-align: center;
+    }
+    .ps-items-table td.check::before {
+      content: '☐';
+      font-size: 13px;
+      color: #111;
+    }
+    .ps-items-table td.qty {
+      text-align: center;
+      font-weight: 700;
+      width: 40px;
+    }
+    .ps-items-table td.price {
+      text-align: right;
+      width: 60px;
+      white-space: nowrap;
+    }
+
+    .ps-verify-box {
+      margin-top: 4px;
+      padding: 5px 8px;
+      background: #fef2f2;
+      border-left: 3px solid #dc2626;
+      border-radius: 3px;
+      font-size: 9px;
+      color: #991b1b;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .ps-footer {
+      border-top: 1px dashed #9ca3af;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #f9fafb;
+      flex-shrink: 0;
+    }
+    .ps-footer .ps-qr {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+    .ps-footer .ps-footer-info {
+      flex: 1;
+      font-size: 9px;
+      color: #4b5563;
+      line-height: 1.4;
+    }
+    .ps-footer .ps-footer-info strong {
+      color: #111;
+      display: block;
+      font-size: 10px;
+      margin-bottom: 1px;
+    }
+
+    .ps-courier {
+      background: #eff6ff;
+      border: 1px solid #3b82f6;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #1e40af;
+      text-align: center;
+    }
+
+    #slipPrintArea { display: none; }
+
+    /* ============ 🖨️ PRINT STYLES ============ */
+    @media print {
+      body * { visibility: hidden; }
+      #slipPrintArea, #slipPrintArea * { visibility: visible; }
+
+      #slipPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+      }
+
+      .sidebar, .topbar, .mobile-bottom-nav,
+      .sidebar-overlay, .page-head, .slip-selector, .preview-actions,
+      .slip-container, .no-print, #adminSidebar, #adminTopbar,
+      #backTopBtn { display: none !important; }
+
+      /* প্রতিটি স্লিপ আলাদা পৃষ্ঠায় প্রিন্ট হবে */
+      @page {
+        size: auto;
+        margin: 5mm;
+      }
+
+      .slip-container-print {
+        display: block;
+      }
+
+      .packing-slip {
+        width: 100mm;
+        height: 150mm;
+        border: 1px solid #111;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        page-break-after: always;
+        break-after: page;
+        margin: 0;
+      }
+
+      .packing-slip:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+
+      .ps-barcode svg {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        height: 40px;
+      }
+
+      html, body {
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    /* থার্মাল প্রিন্ট (4x6" একক) */
+    @media print and (max-width: 105mm) {
+      @page {
+        size: 4in 6in;
+        margin: 0;
+      }
+      .packing-slip {
+        width: 4in;
+        height: 6in;
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .slip-container {
+        grid-template-columns: 1fr;
+      }
+      .packing-slip {
+        width: 100%;
+        max-width: 384px;
+        height: auto;
+        min-height: 576px;
+      }
+    }
+  </style>
+</head>
+<body data-title="প্যাকিং স্লিপ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head no-print">
+        <h1>🖨️ প্যাকিং স্লিপ</h1>
+        <a href="orders.html" class="btn btn-outline">
+          <i class="fa-solid fa-arrow-left"></i> অর্ডারে ফিরে যান
+        </a>
+      </div>
+
+      <!-- অর্ডার সিলেক্টর -->
+      <div class="slip-selector no-print">
+        <div class="slip-controls">
+          <div class="form-group">
+            <label>🔍 অর্ডার খুঁজুন</label>
+            <input type="text" id="searchInput" placeholder="অর্ডার ID বা কাস্টমার...">
+          </div>
+          <div class="form-group">
+            <label>ফিল্টার</label>
+            <select id="filterStatus">
+              <option value="">সব অর্ডার</option>
+              <option value="pending">অপেক্ষমাণ</option>
+              <option value="confirmed">কনফার্ম</option>
+              <option value="packed">প্যাকড</option>
+              <option value="shipped">শিপড</option>
+            </select>
+          </div>
+          <button class="btn btn-outline" onclick="selectAll()">
+            <i class="fa-solid fa-check-double"></i> সব সিলেক্ট
+          </button>
+          <button class="btn btn-primary" onclick="showSelected()">
+            <i class="fa-solid fa-eye"></i> প্রিভিউ
+          </button>
+        </div>
+
+        <div class="order-picker-list" id="orderPickerList"></div>
+      </div>
+
+      <!-- প্রিভিউ অ্যাকশন -->
+      <div class="preview-actions no-print" id="previewActions" style="display:none;">
+        <div class="info">
+          <i class="fa-solid fa-tag" style="color:var(--green-600)"></i>
+          <span id="selectedCount">0টি স্লিপ</span>
+        </div>
+        <div class="btns">
+          <button class="btn btn-outline" onclick="clearSelection()">
+            <i class="fa-solid fa-xmark"></i> ক্লিয়ার
+          </button>
+          <button class="btn btn-primary" onclick="printSlips()">
+            <i class="fa-solid fa-print"></i> প্রিন্ট
+          </button>
+        </div>
+      </div>
+
+      <!-- প্রিভিউ কন্টেইনার -->
+      <div class="slip-container" id="slipContainer"></div>
+
+      <!-- প্রিন্ট এরিয়া (লুকানো) -->
+      <div id="slipPrintArea"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  // ============================================
+  // ডেটা হেল্পার
+  // ============================================
+  function getOrders() {
+    return AdminStore.get('orders', DEMO_ORDERS);
+  }
+  function getSettings() {
+    try {
+      return JSON.parse(localStorage.getItem('kc_admin_settings') || '{}');
+    } catch { return {}; }
+  }
+  function getShowPartner() {
+    return getSettings().showDeliveryPartner !== false;
+  }
+
+  let selectedOrders = new Set();
+
+  // ============================================
+  // অর্ডার পিকার লিস্ট রেন্ডার
+  // ============================================
+  function renderOrderList() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+
+    let orders = getOrders();
+    if (search) {
+      orders = orders.filter(o =>
+        o.id.toLowerCase().includes(search) ||
+        (o.customer || '').toLowerCase().includes(search) ||
+        (o.phone || '').includes(search)
+      );
+    }
+    if (status) orders = orders.filter(o => o.status === status);
+
+    // শুধু non-cancelled
+    orders = orders.filter(o => o.status !== 'cancelled');
+
+    const list = document.getElementById('orderPickerList');
+    if (!orders.length) {
+      list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--gray-500); font-size:13px;">কোনো অর্ডার পাওয়া যায়নি</div>';
+      return;
+    }
+
+    const statusLabels = {
+      pending: '⏳ অপেক্ষমাণ', confirmed: '✅ কনফার্ম',
+      packed: '📦 প্যাকড', shipped: '🚚 শিপড', delivered: '🎉 ডেলিভার্ড'
+    };
+
+    list.innerHTML = orders.map(o => {
+      const isSelected = selectedOrders.has(o.id);
+      return `
+        <label class="order-pick-item ${isSelected ? 'selected' : ''}" data-id="${o.id}">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelect('${o.id}', this.checked)">
+          <div class="order-pick-info">
+            <strong>#${o.id} — ${o.customer}</strong>
+            <small>${statusLabels[o.status] || o.status} · ${formatTk(o.total)} · ${o.phone}</small>
+          </div>
+        </label>
+      `;
+    }).join('');
+  }
+
+  function toggleSelect(id, checked) {
+    if (checked) selectedOrders.add(id);
+    else selectedOrders.delete(id);
+    renderOrderList();
+    updatePreviewActions();
+  }
+
+  function selectAll() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    let orders = getOrders().filter(o => o.status !== 'cancelled');
+    if (search) {
+      orders = orders.filter(o =>
+        o.id.toLowerCase().includes(search) ||
+        (o.customer || '').toLowerCase().includes(search) ||
+        (o.phone || '').includes(search)
+      );
+    }
+    if (status) orders = orders.filter(o => o.status === status);
+    orders.forEach(o => selectedOrders.add(o.id));
+    renderOrderList();
+    updatePreviewActions();
+  }
+
+  function clearSelection() {
+    selectedOrders.clear();
+    renderOrderList();
+    updatePreviewActions();
+    document.getElementById('slipContainer').innerHTML = '';
+  }
+
+  function updatePreviewActions() {
+    const actions = document.getElementById('previewActions');
+    if (selectedOrders.size > 0) {
+      actions.style.display = 'flex';
+      document.getElementById('selectedCount').textContent = `${selectedOrders.size}টি স্লিপ`;
+    } else {
+      actions.style.display = 'none';
+    }
+  }
+
+  // ============================================
+  // স্লিপ HTML জেনারেট
+  // ============================================
+  function generateSlipHTML(order) {
+    const settings = getSettings();
+    const showPartner = getShowPartner();
+
+    // আইটেম
+    let items = [];
+    if (order.items_detail && Array.isArray(order.items_detail) && order.items_detail.length) {
+      items = order.items_detail.filter(it => it.qty > 0);
+    }
+
+    // মোট আইটেম
+    const totalItems = items.reduce((s, i) => s + (i.qty || 0), 0);
+
+    // টোটাল
+    const subtotal = order.subtotal !== undefined
+      ? order.subtotal
+      : items.reduce((s, i) => s + i.price * i.qty, 0);
+    const delivery = order.delivery !== undefined ? order.delivery : (subtotal > 500 ? 0 : 40);
+    const total = order.total !== undefined ? order.total : (subtotal + delivery);
+
+    // পেমেন্ট
+    const isCOD = order.payment === 'cod';
+    const paymentLabel = {
+      cod: 'ক্যাশ অন ডেলিভারি',
+      bkash: 'বিকাশ (পেইড)',
+      nagad: 'নগদ (পেইড)',
+      card: 'কার্ড (পেইড)'
+    }[order.payment] || order.payment;
+
+    // কুরিয়ার পার্টনার
+    const partnerName = order.delivery_partner_name || 'কাচাবাজার টিম';
+
+    // পণ্য রো
+    const itemRows = items.length ? items.map(it => `
+      <tr>
+        <td class="check"></td>
+        <td><strong>${it.name}</strong> <span style="color:#6b7280; font-size:9px;">(${it.unit || 'কেজি'})</span></td>
+        <td class="qty">${it.qty}</td>
+        <td class="price">${formatTk(it.price * it.qty)}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="4" style="text-align:center; color:#6b7280; padding:8px;">পণ্যের বিস্তারিত নেই</td></tr>';
+
+    return `
+      <div class="packing-slip" data-order-id="${order.id}">
+        <!-- হেডার -->
+        <div class="ps-header">
+          <div class="ps-brand">কাচা<span>বাজার</span></div>
+          <div class="ps-badge">Packing Slip</div>
+        </div>
+
+        <!-- অর্ডার ID বার -->
+        <div class="ps-order-id-bar">
+          <div>
+            <strong>#${order.id}</strong>
+            <span style="margin-left:6px; color:#6b7280;">${formatDate(order.date)}</span>
+          </div>
+          <div style="font-weight:700; color:#15803d;">${totalItems}টি আইটেম</div>
+        </div>
+
+        <!-- বারকোড -->
+        <div class="ps-barcode" id="barcode-${order.id}"></div>
+
+        <!-- বডি -->
+        <div class="ps-body">
+
+          <!-- ডেলিভারি ঠিকানা -->
+          <div class="ps-section">
+            <div class="ps-section-title">📦 ডেলিভারি ঠিকানা / Ship To</div>
+            <div class="ps-to-name">${order.customer}</div>
+            <div class="ps-to-phone">📞 ${order.phone}</div>
+            <div class="ps-to-address">
+              ${order.address || '—'}
+              ${order.area ? `<br><strong>এলাকা:</strong> ${order.area}` : ''}
+            </div>
+          </div>
+
+          <!-- COD + পার্টনার -->
+          <div class="ps-two-col">
+            <div class="ps-cod-box">
+              <div class="ps-cod-label">${isCOD ? 'COD পরিমাণ' : 'পেমেন্ট'}</div>
+              <div class="ps-cod-amount">${isCOD ? formatTk(total) : '✅ পেইড'}</div>
+            </div>
+            <div class="ps-section" style="display:flex; flex-direction:column; justify-content:center;">
+              <div class="ps-section-title">🚚 ডেলিভারি পার্টনার</div>
+              <div style="font-size:11px; font-weight:700; color:#111;">${partnerName}</div>
+              <div style="font-size:9px; color:#6b7280; margin-top:1px;">${paymentLabel}</div>
+            </div>
+          </div>
+
+          <!-- পণ্য তালিকা -->
+          <div style="flex:1; overflow:hidden;">
+            <table class="ps-items-table">
+              <thead>
+                <tr>
+                  <th style="width:16px;">✓</th>
+                  <th>পণ্য</th>
+                  <th style="text-align:center; width:40px;">পরিমাণ</th>
+                  <th style="text-align:right; width:60px;">মূল্য</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemRows}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ভেরিফিকেশন নোট -->
+          <div class="ps-verify-box">
+            ⚠️ প্যাকিং ভেরিফিকেশন: প্রতিটি পণ্য টিক দিন। সঠিক পণ্য, পরিমাণ ও মান যাচাই করুন।
+          </div>
+
+          <!-- টোটাল -->
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px; background:#f3f4f6; border-radius:4px; font-size:11px; font-weight:700;">
+            <span>মোট (${totalItems}টি)</span>
+            <span style="color:#15803d; font-size:13px;">${formatTk(total)}</span>
+          </div>
+        </div>
+
+        <!-- ফুটার -->
+        <div class="ps-footer">
+          <div class="ps-qr" id="qr-${order.id}"></div>
+          <div class="ps-footer-info">
+            <strong>কাচাবাজার</strong>
+            ঢাকা, বাংলাদেশ<br>
+            ${settings.sitePhone ? `📞 ${settings.sitePhone}<br>` : ''}
+            <span style="font-size:8px;">www.kachabazar.com</span>
+          </div>
+          <div style="text-align:right; font-size:8px; color:#6b7280;">
+            <div>প্যাক হয়েছে</div>
+            <div style="font-weight:700; font-size:9px; color:#111;">___________</div>
+            <div style="margin-top:6px;">স্বাক্ষর</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============================================
+  // প্রিভিউ দেখান
+  // ============================================
+  function showSelected() {
+    if (!selectedOrders.size) {
+      showToast('কমপক্ষে ১টি অর্ডার সিলেক্ট করুন', 'error');
+      return;
+    }
+
+    const orders = getOrders();
+    const selected = orders.filter(o => selectedOrders.has(o.id));
+
+    const container = document.getElementById('slipContainer');
+    container.innerHTML = selected.map(o => generateSlipHTML(o)).join('');
+
+    // বারকোড ও QR জেনারেট
+    setTimeout(() => {
+      selected.forEach(o => {
+        generateBarcode(o.id);
+        generateQR(o.id);
+      });
+    }, 100);
+
+    updatePreviewActions();
+    showToast(`${selected.length}টি স্লিপ প্রস্তুত ✅`, 'success');
+
+    // স্ক্রলে যান
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ============================================
+  // বারকোড
+  // ============================================
+  function generateBarcode(orderId) {
+    const el = document.getElementById('barcode-' + orderId);
+    if (!el || typeof JsBarcode === 'undefined') return;
+    try {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      el.innerHTML = '';
+      el.appendChild(svg);
+      JsBarcode(svg, orderId, {
+        format: 'CODE128',
+        width: 1.6,
+        height: 32,
+        displayValue: false,
+        margin: 0
+      });
+    } catch (e) {
+      console.error('Barcode error:', e);
+    }
+  }
+
+  // ============================================
+  // QR কোড
+  // ============================================
+  function generateQR(orderId) {
+    const el = document.getElementById('qr-' + orderId);
+    if (!el || typeof QRCode === 'undefined') return;
+    el.innerHTML = '';
+    try {
+      new QRCode(el, {
+        text: location.origin + '/admin/order-detail.html?id=' + orderId,
+        width: 60,
+        height: 60,
+        colorDark: '#111',
+        colorLight: '#fff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (e) {
+      console.error('QR error:', e);
+    }
+  }
+
+  // ============================================
+  // প্রিন্ট
+  // ============================================
+  function printSlips() {
+    if (!selectedOrders.size) {
+      showToast('প্রিন্ট করার জন্য কমপক্ষে ১টি অর্ডার সিলেক্ট করুন', 'error');
+      return;
+    }
+
+    if (typeof JsBarcode === 'undefined' || typeof QRCode === 'undefined') {
+      showToast('বারকোড বা QR লাইব্রেরি লোড হয়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।', 'error');
+      return;
+    }
+
+    const selected = getOrders().filter(o => selectedOrders.has(o.id));
+    if (selected.length !== selectedOrders.size) {
+      showToast('সিলেক্ট করা অর্ডারগুলো পাওয়া যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।', 'error');
+      return;
+    }
+
+    // প্রিভিউ না দেখালেও নির্বাচিত অর্ডার থেকে প্রিন্ট স্লিপ তৈরি করুন।
+    const printArea = document.getElementById('slipPrintArea');
+    printArea.innerHTML = `<div class="slip-container-print">${selected.map(generateSlipHTML).join('')}</div>`;
+
+    try {
+      printArea.querySelectorAll('.packing-slip').forEach(slip => {
+        const orderId = slip.dataset.orderId;
+        const barcode = slip.querySelector('.ps-barcode');
+        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        barcode.appendChild(barcodeSvg);
+        JsBarcode(barcodeSvg, orderId, {
+          format: 'CODE128',
+          width: 1.6,
+          height: 32,
+          displayValue: false,
+          margin: 0,
+          lineColor: '#111',
+          background: '#fff'
+        });
+        if (!barcodeSvg.querySelector('rect, path')) {
+          throw new Error(`Barcode was not generated for order ${orderId}`);
+        }
+
+        const qr = slip.querySelector('.ps-qr');
+        new QRCode(qr, {
+          text: location.origin + '/admin/order-detail.html?id=' + orderId,
+          width: 60,
+          height: 60,
+          colorDark: '#111',
+          colorLight: '#fff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      });
+    } catch (e) {
+      console.error('Packing slip barcode/QR generation failed:', e);
+      showToast('বারকোড বা QR তৈরি করা যায়নি। আবার চেষ্টা করুন।', 'error');
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.print());
+    });
+  }
+
+  // ============================================
+  // ইভেন্ট লিসেনার
+  // ============================================
+  document.addEventListener('DOMContentLoaded', () => {
+    renderOrderList();
+    document.getElementById('searchInput').addEventListener('input', renderOrderList);
+    document.getElementById('filterStatus').addEventListener('change', renderOrderList);
+  });
+</script>
+</body>
+</html>

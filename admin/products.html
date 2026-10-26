@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>পণ্যসমূহ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* Product Form Modal — custom styles */
+    .product-form-modal {
+      max-width: 720px;
+    }
+    .pf-section {
+      margin-bottom: 20px;
+    }
+    .pf-section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pf-section-title i {
+      color: var(--green-600);
+    }
+    .pf-image-preview {
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+    .pf-image-preview img {
+      max-width: 180px;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+    }
+    .pf-file-input {
+      padding: 10px;
+      border: 1px dashed var(--gray-300);
+      background: var(--gray-50);
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .pf-discount-readonly {
+      background: var(--gray-50) !important;
+      cursor: not-allowed;
+    }
+    .pf-checkbox-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      cursor: pointer;
+      padding: 12px;
+      background: var(--gray-50);
+      border-radius: 8px;
+      border: 1px solid var(--gray-200);
+    }
+    .pf-checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green-600);
+    }
+    .pf-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pf-actions .btn-primary {
+      flex: 1;
+      justify-content: center;
+    }
+    @media (max-width: 600px) {
+      .product-form-modal {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body data-title="পণ্যসমূহ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📦 পণ্যসমূহ</h1>
+        <button class="btn btn-primary" onclick="openProductForm()">
+          <i class="fa-solid fa-plus"></i> নতুন পণ্য
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 নাম বা ID দিয়ে খুঁজুন...">
+        <select id="filterCategory">
+          <option value="">সব ক্যাটাগরি</option>
+        </select>
+        <select id="filterDistrict">
+          <option value="">সব জেলা</option>
+        </select>
+        <select id="filterStock">
+          <option value="">সব স্টক</option>
+          <option value="in">স্টকে আছে</option>
+          <option value="low">কম স্টক</option>
+          <option value="out">শেষ</option>
+        </select>
+        <select id="sortBy">
+          <option value="newest">নতুন আগে</option>
+          <option value="name">নাম (A-Z)</option>
+          <option value="price-low">দাম কম → বেশি</option>
+          <option value="price-high">দাম বেশি → কম</option>
+          <option value="stock">স্টক কম → বেশি</option>
+        </select>
+        <button class="btn btn-outline" onclick="exportProductsCSV()">
+          <i class="fa-solid fa-download"></i> CSV
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+                  <th>ছবি</th>
+                  <th>ID</th>
+                  <th>নাম</th>
+                  <th>ক্যাটাগরি</th>
+                  <th>জেলা</th>
+                  <th>দাম</th>
+                  <th>স্টক</th>
+                  <th>রেটিং</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="productsBody">
+                <tr><td colspan="11" style="text-align:center;padding:40px;color:var(--gray-500)">লোড হচ্ছে...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="bulkActions" style="margin-top:16px;display:none">
+        <div class="card">
+          <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <strong id="selectedCount">০টি নির্বাচিত</strong>
+            <button class="btn btn-danger btn-sm" onclick="bulkDelete()">
+              <i class="fa-solid fa-trash"></i> ডিলিট
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="bulkToggleActive(true)">সক্রিয় করুন</button>
+            <button class="btn btn-outline btn-sm" onclick="bulkToggleActive(false)">নিষ্ক্রিয় করুন</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pagination" style="margin-top:16px;text-align:center"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     PRODUCT FORM MODAL (New/Edit)
+     ============================================ -->
+<div class="modal-overlay" id="productFormModal">
+  <div class="modal product-form-modal">
+    <div class="modal-head">
+      <h3 id="pfTitle">➕ নতুন পণ্য যোগ করুন</h3>
+      <button class="close-modal" onclick="closeProductForm()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="pfForm" onsubmit="saveProduct(event)">
+
+        <!-- Basic Info -->
+        <div class="pf-section">
+          <div class="pf-section-title">
+            <i class="fa-solid fa-circle-info"></i> মূল তথ্য
+          </div>
+          <div class="form-row single">
+            <div class="form-group">
+              <label>পণ্যের নাম <span class="req">*</span></label>
+              <input type="text" id="pfName" required placeholder="যেমন: পাহাড়ি মধু">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ক্যাটাগরি <span class="req">*</span></label>
+              <select id="pfCategory" required></select>
+            </div>
+            <div class="form-group">
+              <label>জেলা <span class="req">*</span></label>
+              <select id="pfDistrict" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>কৃষক</label>
+              <select id="pfFarmer"></select>
+            </div>
+            <div class="form-group">
+              <label>একক <span class="req">*</span></label>
+              <input type="text" id="pfUnit" required placeholder="কেজি / ডজন / ৫০০ গ্রাম">
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="pf-section">
+          <div class="pf-section-title">
+            <i class="fa-solid fa-tags"></i> মূল্য
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>বর্তমান দাম (৳) <span class="req">*</span></label>
+              <input type="number" id="pfPrice" required min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label>পুরনো দাম (৳)</label>
+              <input type="number" id="pfOldPrice" min="0" step="1">
+              <small>না থাকলে ফাঁকা রাখুন</small>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group">
+              <label>ডিসকাউন্ট %</label>
+              <input type="number" id="pfDiscount" min="0" max="100" readonly class="pf-discount-readonly">
+              <small>পুরনো দাম দিলে অটো হিসাব হবে</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock -->
+        <div class="pf-section">
+          <div class="pf-section-title">
+            <i class="fa-solid fa-warehouse"></i> স্টক
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>স্টক পরিমাণ <span class="req">*</span></label>
+              <input type="number" id="pfStock" required min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label>রেটিং (0-5)</label>
+              <input type="number" id="pfRating" min="0" max="5" step="0.1" value="4.5">
+            </div>
+          </div>
+        </div>
+
+        <!-- Image -->
+        <div class="pf-section">
+          <div class="pf-section-title">
+            <i class="fa-solid fa-image"></i> ছবি
+          </div>
+          <div class="form-group">
+            <label>ছবি আপলোড করুন</label>
+            <input type="file" id="pfImgFile" accept="image/*" class="pf-file-input">
+            <small>সর্বোচ্চ ৫০০ KB · অথবা নিচে URL দিন</small>
+          </div>
+          <div class="form-group">
+            <label>ইমেজ URL</label>
+            <input type="text" id="pfImg" placeholder="https://...">
+          </div>
+          <div class="pf-image-preview" id="pfImagePreview">
+            <img id="pfPreviewImg" alt="Preview">
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="pf-section">
+          <label class="pf-checkbox-row">
+            <input type="checkbox" id="pfActive" checked>
+            <span>
+              <strong>সক্রিয়</strong><br>
+              <small style="color:var(--gray-500)">সাইটে দৃশ্যমান থাকবে</small>
+            </span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="pf-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-save"></i> <span id="pfSaveBtnText">সেভ করুন</span>
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="closeProductForm()">
+            বাতিল
+          </button>
+          <button type="button" class="btn btn-danger" id="pfDeleteBtn" style="display:none;margin-left:auto" onclick="deleteCurrentProduct()">
+            <i class="fa-solid fa-trash"></i> ডিলিট
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <h3>নিশ্চিত করুন</h3>
+      <button class="close-modal" onclick="closeModal('deleteModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p>আপনি কি সত্যিই এই পণ্যটি ডিলিট করতে চান?</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">বাতিল</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">ডিলিট করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Scripts -->
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script src="js/admin-products.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>জেলা — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="জেলা">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🌄 জেলা</h1>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="fa-solid fa-plus"></i> নতুন জেলা
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ছবি</th>
+                  <th>Emoji</th>
+                  <th>নাম</th>
+                  <th>ID</th>
+                  <th>পণ্য</th>
+                  <th>কৃষক</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="distBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="distModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন জেলা</h3>
+      <button class="close-modal" onclick="closeModal('distModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Emoji</label>
+          <input type="text" id="distEmoji" placeholder="🏞️" maxlength="4" style="font-size:22px;text-align:center">
+        </div>
+        <div class="form-group">
+          <label>ID <span class="req">*</span></label>
+          <input type="text" id="distId" placeholder="rangamati" pattern="[a-z]+">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>নাম <span class="req">*</span></label>
+          <input type="text" id="distName" placeholder="রাঙ্গামাটি">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>ছবির URL</label>
+          <input type="url" id="distImg" placeholder="https://...">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>বর্ণনা</label>
+          <textarea id="distDesc" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('distModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveDistrict()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_DISTS = [
+    { id: 'rangamati', name: 'রাঙ্গামাটি', emoji: '🏞️', img: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=300', desc: 'কাপ্তাই লেকের তীরে' },
+    { id: 'khagrachari', name: 'খাগড়াছড়ি', emoji: '⛰️', img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300', desc: 'পাহাড়ি টিলার অর্গানিক' },
+    { id: 'bandarban', name: 'বান্দরবান', emoji: '🌿', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=300', desc: 'সবচেয়ে তাজা পাহাড়ি' }
+  ];
+
+  let editingId = null;
+
+  function getDists() { return AdminStore.get('districts', DEFAULT_DISTS); }
+  function saveDists(list) { AdminStore.set('districts', list); }
+
+  function render() {
+    const dists = getDists();
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    document.getElementById('distBody').innerHTML = dists.map(d => {
+      const pcount = products.filter(p => p.district === d.id).length;
+      return `<tr>
+        <td><img src="${d.img}" alt="${d.name}" style="width:60px;height:40px;border-radius:6px;object-fit:cover"></td>
+        <td style="font-size:22px">${d.emoji}</td>
+        <td><strong>${d.name}</strong></td>
+        <td><code>${d.id}</code></td>
+        <td><span class="badge badge-active">${pcount}টি</span></td>
+        <td>—</td>
+        <td class="actions">
+          <button onclick="openEditModal('${d.id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteDist('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'নতুন জেলা';
+    ['distEmoji','distId','distName','distImg','distDesc'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('distModal').classList.add('show');
+  }
+
+  function openEditModal(id) {
+    const d = getDists().find(x => x.id === id);
+    if (!d) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'জেলা এডিট';
+    document.getElementById('distEmoji').value = d.emoji;
+    document.getElementById('distId').value = d.id;
+    document.getElementById('distId').disabled = true;
+    document.getElementById('distName').value = d.name;
+    document.getElementById('distImg').value = d.img || '';
+    document.getElementById('distDesc').value = d.desc || '';
+    document.getElementById('distModal').classList.add('show');
+  }
+
+  function saveDistrict() {
+    const emoji = document.getElementById('distEmoji').value.trim() || '📍';
+    const id = document.getElementById('distId').value.trim().toLowerCase();
+    const name = document.getElementById('distName').value.trim();
+    const img = document.getElementById('distImg').value.trim();
+    const desc = document.getElementById('distDesc').value.trim();
+
+    if (!id || !name) { showToast('ID ও নাম দিন', 'error'); return; }
+
+    const dists = getDists();
+    if (editingId) {
+      const idx = dists.findIndex(d => d.id === editingId);
+      dists[idx] = { ...dists[idx], name, emoji, img, desc };
+      showToast('আপডেট ✅', 'success');
+    } else {
+      if (dists.some(d => d.id === id)) { showToast('ID আগে আছে', 'error'); return; }
+      dists.push({ id, name, emoji, img, desc });
+      showToast('যোগ হয়েছে ✅', 'success');
+    }
+    saveDists(dists);
+    closeModal('distModal');
+    document.getElementById('distId').disabled = false;
+    render();
+  }
+
+  function deleteDist(id) {
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    const count = products.filter(p => p.district === id).length;
+    if (count > 0 && !confirm(`${count}টি পণ্য আছে, তারা 'রাঙ্গামাটি' তে চলে যাবে। চালিয়ে যাবেন?`)) return;
+    if (count > 0) {
+      AdminStore.set('products', products.map(p => p.district === id ? { ...p, district: 'rangamati' } : p));
+    }
+    saveDists(getDists().filter(d => d.id !== id));
+    showToast('ডিলিট ✅', 'success');
+    render();
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  render();
+</script>
+</body>
+</html>

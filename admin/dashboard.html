@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ড্যাশবোর্ড — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* সাম্প্রতিক অর্ডার ও লো স্টক টেবিলে ছোট ফন্ট */
+    #recentOrders td small,
+    #lowStockList td small {
+      font-size: 11.5px;
+      color: var(--gray-500);
+    }
+
+    /* কুইক অ্যাকশন কার্ড হোভার */
+    .quick-action {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      transition: all 0.2s;
+      text-decoration: none;
+      color: var(--gray-900);
+    }
+    .quick-action:hover {
+      border-color: var(--green-500);
+      background: var(--green-50);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .quick-action-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .quick-action-info strong {
+      display: block;
+      font-size: 14px;
+      color: var(--gray-900);
+      line-height: 1.3;
+    }
+    .quick-action-info small {
+      display: block;
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .quick-actions-grid { grid-template-columns: 1fr; }
+    }
+
+    /* স্ট্যাটাস ড্রপডাউনে ছোট */
+    .quick-status {
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body data-title="ড্যাশবোর্ড">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+
+      <!-- ============ STATS GRID ============ -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>মোট বিক্রি</h3>
+            <strong id="statSales">৳০</strong>
+            <div class="trend">
+              <i class="fa-solid fa-arrow-up"></i> সব অর্ডার মিলিয়ে
+            </div>
+          </div>
+          <div class="stat-icon green">
+            <i class="fa-solid fa-money-bill-wave"></i>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>নতুন অর্ডার</h3>
+            <strong id="statOrders">০</strong>
+            <div class="trend">অপেক্ষমাণ</div>
+          </div>
+          <div class="stat-icon blue">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>মোট কাস্টমার</h3>
+            <strong id="statCustomers">০</strong>
+            <div class="trend">রেজিস্টার্ড</div>
+          </div>
+          <div class="stat-icon purple">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>মোট পণ্য</h3>
+            <strong id="statProducts">০</strong>
+            <div class="trend">সক্রিয়</div>
+          </div>
+          <div class="stat-icon orange">
+            <i class="fa-solid fa-box"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ QUICK ACTIONS ============ -->
+      <div class="card">
+        <div class="card-head">
+          <h2>⚡ দ্রুত কাজ</h2>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions-grid">
+            <a href="product-form.html" class="quick-action">
+              <div class="quick-action-icon" style="background:#dcfce7; color:#15803d;">
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <div class="quick-action-info">
+                <strong>নতুন পণ্য</strong>
+                <small>পণ্য যোগ করুন</small>
+              </div>
+            </a>
+
+            <a href="orders.html" class="quick-action">
+              <div class="quick-action-icon" style="background:#dbeafe; color:#1e40af;">
+                <i class="fa-solid fa-cart-shopping"></i>
+              </div>
+              <div class="quick-action-info">
+                <strong>অর্ডার দেখুন</strong>
+                <small>সব অর্ডার</small>
+              </div>
+            </a>
+
+            <a href="coupons.html" class="quick-action">
+              <div class="quick-action-icon" style="background:#fef3c7; color:#b45309;">
+                <i class="fa-solid fa-ticket"></i>
+              </div>
+              <div class="quick-action-info">
+                <strong>কুপন তৈরি</strong>
+                <small>ডিসকাউন্ট কোড</small>
+              </div>
+            </a>
+
+            <a href="reports.html" class="quick-action">
+              <div class="quick-action-icon" style="background:#e9d5ff; color:#6b21a8;">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+              <div class="quick-action-info">
+                <strong>রিপোর্ট</strong>
+                <small>বিক্রি বিশ্লেষণ</small>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ RECENT ORDERS ============ -->
+      <div class="card">
+        <div class="card-head">
+          <h2>📦 সাম্প্রতিক অর্ডার</h2>
+          <a href="orders.html" class="btn btn-sm btn-outline">
+            সব দেখুন <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>অর্ডার</th>
+                  <th>কাস্টমার</th>
+                  <th>তারিখ</th>
+                  <th>মোট</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrders">
+                <tr>
+                  <td colspan="6" style="text-align:center;padding:40px;color:var(--gray-500)">
+                    লোড হচ্ছে...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ LOW STOCK ============ -->
+      <div class="card">
+        <div class="card-head">
+          <h2>⚠️ কম স্টকের পণ্য</h2>
+          <a href="products.html" class="btn btn-sm btn-outline">
+            সব দেখুন <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>পণ্য</th>
+                  <th>ক্যাটাগরি</th>
+                  <th>স্টক</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="lowStockList">
+                <tr>
+                  <td colspan="4" style="text-align:center;padding:40px;color:var(--gray-500)">
+                    লোড হচ্ছে...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  // ============================================
+  // লেবেল ম্যাপ (আগের মতোই)
+  // ============================================
+  const CAT_LABELS = {
+    veg: 'সবজি', fruit: 'ফলমূল', fish: 'মাছ', meat: 'মাংস',
+    dairy: 'দুধ ও ডিম', spice: 'মসলা', honey: 'মধু',
+    rice: 'চাল ও ডাল', organic: 'অর্গানিক'
+  };
+
+  const PAYMENT_LABELS = {
+    cod: '💵 COD',
+    bkash: '📱 বিকাশ',
+    nagad: '📱 নগদ',
+    card: '💳 কার্ড'
+  };
+
+  // ============================================
+  // ডেটা লোড
+  // ============================================
+  const orders = AdminStore.get('orders', DEMO_ORDERS);
+  const products = AdminStore.get('products', DEMO_PRODUCTS);
+  const customers = AdminStore.get('customers', DEMO_CUSTOMERS);
+
+  // ============================================
+  // STATS — ✅ এখন "মোট বিক্রি" (সব অর্ডার)
+  // ============================================
+  const pending = orders.filter(o => o.status === 'pending');
+  const totalSales = orders
+    .filter(o => o.status !== 'cancelled')
+    .reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+  document.getElementById('statSales').textContent = formatTk(totalSales);
+  document.getElementById('statOrders').textContent = pending.length;
+  document.getElementById('statCustomers').textContent = customers.length;
+  document.getElementById('statProducts').textContent = products.length;
+
+  // ============================================
+  // RECENT ORDERS — সাম্প্রতিক ৫টি
+  // ============================================
+  const recentOrdersEl = document.getElementById('recentOrders');
+
+  if (!orders.length) {
+    recentOrdersEl.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center;padding:40px;color:var(--gray-500)">
+          <i class="fa-solid fa-inbox" style="font-size:28px; display:block; margin-bottom:8px; color:var(--gray-300)"></i>
+          কোনো অর্ডার নেই
+        </td>
+      </tr>`;
+  } else {
+    // তারিখ অনুযায়ী descending sort
+    const recentOrders = orders
+      .slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    recentOrdersEl.innerHTML = recentOrders.map(o => `
+      <tr>
+        <td><strong>${o.id}</strong></td>
+        <td>
+          ${o.customer}<br>
+          <small style="color:var(--gray-500)">${o.phone || ''}</small>
+        </td>
+        <td>${formatDate(o.date)}</td>
+        <td><strong>${formatTk(o.total)}</strong></td>
+        <td>${statusBadge(o.status)}</td>
+        <td class="actions">
+          <a href="order-detail.html?id=${o.id}" title="বিস্তারিত">
+            <i class="fa-solid fa-eye"></i>
+          </a>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ============================================
+  // LOW STOCK — কম স্টকের পণ্য
+  // ============================================
+  const lowStockEl = document.getElementById('lowStockList');
+  const lowStock = products
+    .filter(p => Number(p.stock) < 10)
+    .sort((a, b) => Number(a.stock) - Number(b.stock))
+    .slice(0, 5);
+
+  if (!lowStock.length) {
+    lowStockEl.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center;padding:40px;color:var(--gray-500)">
+          <i class="fa-solid fa-circle-check" style="font-size:28px; display:block; margin-bottom:8px; color:var(--green-500)"></i>
+          সব পণ্যের স্টক ঠিক আছে ✅
+        </td>
+      </tr>`;
+  } else {
+    lowStockEl.innerHTML = lowStock.map(p => `
+      <tr>
+        <td>
+          <strong>${p.name}</strong><br>
+          <small style="color:var(--gray-500)">#${p.id}</small>
+        </td>
+        <td>${CAT_LABELS[p.category] || p.category}</td>
+        <td>${stockBadge(Number(p.stock))}</td>
+        <td class="actions">
+          <a href="product-form.html?id=${p.id}" class="btn btn-sm btn-outline">
+            <i class="fa-solid fa-pen"></i> এডিট
+          </a>
+        </td>
+      </tr>
+    `).join('');
+  }
+</script>
+</body>
+</html>

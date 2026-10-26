@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>সাপোর্ট টিকেট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .ticket-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; background:#fff; padding:10px 16px; border-radius:var(--radius); box-shadow:var(--shadow-sm); }
+    .ticket-tabs button { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; color:var(--gray-600); background:var(--gray-100); }
+    .ticket-tabs button.active { background:var(--green-600); color:#fff; }
+    .ticket-card { padding:16px 20px; border-bottom:1px solid var(--gray-200); transition:background .15s; }
+    .ticket-card:hover { background:var(--gray-50); }
+    .ticket-card:last-child { border-bottom:none; }
+    .ticket-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; }
+    .ticket-head h4 { font-size:15px; margin-bottom:4px; }
+    .ticket-meta { font-size:12px; color:var(--gray-500); }
+    .ticket-msg { font-size:13px; color:var(--gray-700); background:var(--gray-50); padding:10px 12px; border-radius:6px; border-left:3px solid var(--orange-500); margin:8px 0; }
+    .ticket-reply { font-size:13px; color:var(--gray-700); background:#f0fdf4; padding:10px 12px; border-radius:6px; border-left:3px solid var(--green-600); margin:8px 0; }
+    .ticket-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .badge-new { background:#fef3c7; color:#b45309; }
+    .badge-open { background:#dbeafe; color:#1e40af; }
+    .badge-resolved { background:#dcfce7; color:#15803d; }
+    .badge-closed { background:var(--gray-100); color:var(--gray-600); }
+  </style>
+</head>
+<body data-title="সাপোর্ট টিকেট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>💬 সাপোর্ট টিকেট</h1>
+        <span class="badge badge-new" id="newCountBadge" style="font-size:13px; padding:6px 14px;">0টি নতুন</span>
+      </div>
+
+      <div class="ticket-tabs" id="ticketTabs">
+        <button class="active" data-status="all">সব (<span id="cAll">0</span>)</button>
+        <button data-status="new">নতুন (<span id="cNew">0</span>)</button>
+        <button data-status="open">ওপেন (<span id="cOpen">0</span>)</button>
+        <button data-status="resolved">সমাধান (<span id="cResolved">0</span>)</button>
+        <button data-status="closed">ক্লোজড (<span id="cClosed">0</span>)</button>
+      </div>
+
+      <div class="card">
+        <div id="ticketList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reply Modal -->
+<div class="modal-overlay" id="replyModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>রিপ্লাই করুন</h3>
+      <button class="close-modal" onclick="closeModal('replyModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="replyTicketId">
+      <div id="replyOriginalMsg" style="background:var(--gray-50); padding:12px; border-radius:8px; margin-bottom:14px; font-size:13px;"></div>
+      <div class="form-group">
+        <label>আপনার রিপ্লাই <span class="req">*</span></label>
+        <textarea id="replyMessage" rows="4" placeholder="কাস্টমারকে যা বলতে চান..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('replyModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="submitReply()"><i class="fa-solid fa-paper-plane"></i> পাঠান</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_TICKETS = [
+    { id: 'TK1001', name: 'রফিক আহমেদ', phone: '01711111111', email: 'rafiq@example.com', subject: 'মধুর বোতল ভাঙা এসেছে', message: 'আজ অর্ডার পেয়েছি কিন্তু মধুর বোতল ভাঙা ছিল। কী করব?', status: 'new', date: '2025-01-21', reply: '' },
+    { id: 'TK1002', name: 'সাদিয়া ইসলাম', phone: '01722222222', email: '', subject: 'ডেলিভারি কখন আসবে?', message: 'আমার অর্ডার #KC100002 কখন ডেলিভারি হবে?', status: 'open', date: '2025-01-20', reply: 'আগামীকাল সকাল ১০টার মধ্যে পৌঁছে যাবে।' },
+    { id: 'TK1003', name: 'করিম শেখ', phone: '01733333333', email: '', subject: 'রিফান্ড চাই', message: 'পণ্য পছন্দ হয়নি। রিফান্ড চাই।', status: 'resolved', date: '2025-01-19', reply: 'রিফান্ড প্রসেস করা হয়েছে। ৩-৫ দিনের মধ্যে পাবেন।' }
+  ];
+
+  let activeTab = 'all';
+
+  function getTickets() { return AdminStore.get('support_tickets', DEFAULT_TICKETS); }
+  function saveTickets(list) { AdminStore.set('support_tickets', list); }
+
+  function updateCounts() {
+    const tickets = getTickets();
+    document.getElementById('cAll').textContent = tickets.length;
+    document.getElementById('cNew').textContent = tickets.filter(t => t.status === 'new').length;
+    document.getElementById('cOpen').textContent = tickets.filter(t => t.status === 'open').length;
+    document.getElementById('cResolved').textContent = tickets.filter(t => t.status === 'resolved').length;
+    document.getElementById('cClosed').textContent = tickets.filter(t => t.status === 'closed').length;
+    document.getElementById('newCountBadge').textContent = tickets.filter(t => t.status === 'new').length + 'টি নতুন';
+  }
+
+  function statusBadge(s) {
+    const map = { new: 'badge-new', open: 'badge-open', resolved: 'badge-resolved', closed: 'badge-closed' };
+    const labels = { new: 'নতুন', open: 'ওপেন', resolved: 'সমাধান', closed: 'ক্লোজড' };
+    return `<span class="badge ${map[s] || 'badge-closed'}">${labels[s] || s}</span>`;
+  }
+
+  function render() {
+    let tickets = getTickets();
+    if (activeTab !== 'all') tickets = tickets.filter(t => t.status === activeTab);
+    tickets.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const list = document.getElementById('ticketList');
+    if (!tickets.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>কোনো টিকেট নেই</p></div>';
+      return;
+    }
+
+    list.innerHTML = tickets.map(t => `
+      <div class="ticket-card">
+        <div class="ticket-head">
+          <div style="flex:1; min-width:0;">
+            <h4>#${t.id} — ${t.subject}</h4>
+            <div class="ticket-meta">${t.name} · ${t.phone} · ${formatDate(t.date)}</div>
+          </div>
+          ${statusBadge(t.status)}
+        </div>
+        <div class="ticket-msg"><strong>মেসেজ:</strong> ${t.message}</div>
+        ${t.reply ? `<div class="ticket-reply"><strong>রিপ্লাই:</strong> ${t.reply}</div>` : ''}
+        <div class="ticket-actions">
+          <button class="btn btn-sm btn-primary" onclick="openReplyModal('${t.id}')"><i class="fa-solid fa-reply"></i> রিপ্লাই</button>
+          ${t.status !== 'resolved' ? `<button class="btn btn-sm btn-outline" onclick="setStatus('${t.id}', 'resolved')"><i class="fa-solid fa-check"></i> সমাধান</button>` : ''}
+          ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline" onclick="setStatus('${t.id}', 'closed')"><i class="fa-solid fa-xmark"></i> ক্লোজ</button>` : ''}
+          <button class="btn btn-sm btn-danger" onclick="deleteTicket('${t.id}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openReplyModal(id) {
+    const t = getTickets().find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('replyTicketId').value = id;
+    document.getElementById('replyOriginalMsg').innerHTML = `<strong>${t.name}:</strong> ${t.message}`;
+    document.getElementById('replyMessage').value = t.reply || '';
+    document.getElementById('replyModal').classList.add('show');
+  }
+
+  function submitReply() {
+    const id = document.getElementById('replyTicketId').value;
+    const msg = document.getElementById('replyMessage').value.trim();
+    if (!msg) { showToast('রিপ্লাই লিখুন', 'error'); return; }
+    const tickets = getTickets();
+    const idx = tickets.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    tickets[idx].reply = msg;
+    if (tickets[idx].status === 'new') tickets[idx].status = 'open';
+    saveTickets(tickets);
+    closeModal('replyModal');
+    showToast('রিপ্লাই পাঠানো হয়েছে ✅', 'success');
+    updateCounts();
+    render();
+  }
+
+  function setStatus(id, status) {
+    const tickets = getTickets();
+    const idx = tickets.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    tickets[idx].status = status;
+    saveTickets(tickets);
+    updateCounts();
+    render();
+    showToast('স্ট্যাটাস আপডেট ✅', 'success');
+  }
+
+  function deleteTicket(id) {
+    if (!confirm('টিকেট ডিলিট করবেন?')) return;
+    saveTickets(getTickets().filter(t => t.id !== id));
+    updateCounts();
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#ticketTabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ticketTabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.status;
+        render();
+      });
+    });
+    updateCounts();
+    render();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>অর্ডার বিস্তারিত — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* ============ SCREEN VIEW ============ */
+    .order-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .items-table th, .items-table td {
+      padding: 12px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .items-table th {
+      font-size: 12px;
+      color: var(--gray-600);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .summary-box {
+      background: var(--gray-50);
+      padding: 16px;
+      border-radius: var(--radius);
+      margin-top: 16px;
+    }
+    .summary-box div {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+    .summary-box .total {
+      border-top: 1px solid var(--gray-300);
+      padding-top: 12px;
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green-700);
+    }
+    .status-select {
+      padding: 10px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 900px) {
+      .order-detail-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================
+       🖨️ PROFESSIONAL INVOICE DESIGN (A4)
+       ============================================ */
+    #invoicePrintArea { display: none; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
+      #invoicePrintArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff;
+        padding: 0;
+        margin: 0;
+        font-family: 'Hind Siliguri', sans-serif;
+        color: #1a1a1a;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .admin-wrap, .sidebar, .topbar, .mobile-bottom-nav, .sidebar-overlay,
+      .no-print, #backTopBtn, .page-head, #orderContent,
+      #adminSidebar, #adminTopbar { display: none !important; }
+
+      @page { size: A4; margin: 15mm; }
+
+      html, body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+
+      /* ইনভয়েস স্টাইল */
+      .inv-container { width: 100%; max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+      .inv-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; border-bottom: 2px solid #16a34a; background: #f9fafb; }
+      .inv-brand { display: flex; gap: 16px; align-items: center; }
+      .inv-logo-box { width: 60px; height: 60px; background: #16a34a; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; }
+      .inv-brand-text h1 { font-size: 28px; font-weight: 700; color: #111827; margin: 0; line-height: 1.2; }
+      .inv-brand-text h1 span { color: #ea580c; }
+      .inv-brand-text p { font-size: 12px; color: #6b7280; margin: 2px 0 0; }
+      .inv-meta { text-align: right; }
+      .inv-title { font-size: 32px; font-weight: 800; color: #16a34a; margin-bottom: 8px; letter-spacing: 2px; }
+      .inv-meta-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; font-size: 12px; text-align: left; min-width: 220px; }
+      .inv-meta-box div { display: flex; justify-content: space-between; margin-bottom: 6px; }
+      .inv-meta-box div:last-child { margin-bottom: 0; }
+      .inv-meta-box span:first-child { color: #6b7280; }
+      .inv-meta-box span:last-child { font-weight: 600; color: #111827; }
+
+      .inv-parties { display: grid; grid-template-columns: 1fr 1fr; padding: 30px; gap: 30px; border-bottom: 1px solid #e5e7eb; }
+      .inv-party h4 { font-size: 11px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 2px solid #16a34a; padding-bottom: 4px; display: inline-block; }
+      .inv-party p { font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 4px; }
+      .inv-party p strong { color: #111827; }
+
+      .inv-table-wrap { padding: 0 30px; }
+      .inv-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      .inv-table th { background: #16a34a; color: #fff; font-size: 12px; font-weight: 600; padding: 12px; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+      .inv-table th.right { text-align: right; }
+      .inv-table th.center { text-align: center; }
+      .inv-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #111827; }
+      .inv-table td.right { text-align: right; font-weight: 600; }
+      .inv-table td.center { text-align: center; }
+      .inv-table tr:nth-child(even) { background: #f9fafb; }
+
+      .inv-summary-wrap { display: flex; justify-content: space-between; padding: 20px 30px 30px; }
+      .inv-summary-left { flex: 1; }
+      .inv-summary-left .amount-words { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 16px; border-radius: 6px; font-size: 12px; color: #15803d; margin-bottom: 20px; }
+      .inv-summary-left .amount-words strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #16a34a; }
+
+      .inv-summary-right { width: 280px; }
+      .inv-summary-right .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #4b5563; border-bottom: 1px dashed #e5e7eb; }
+      .inv-summary-right .summary-row:last-child { border-bottom: none; }
+      .inv-summary-right .summary-row span:last-child { font-weight: 600; color: #111827; }
+      .inv-summary-right .summary-row.grand { border-top: 2px solid #16a34a; border-bottom: none; margin-top: 8px; padding-top: 12px; font-size: 18px; font-weight: 800; }
+      .inv-summary-right .summary-row.grand span:first-child { color: #16a34a; }
+      .inv-summary-right .summary-row.grand span:last-child { color: #15803d; }
+
+      .inv-footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 20px 30px; text-align: center; }
+      .inv-footer .thanks { font-size: 15px; font-weight: 700; color: #16a34a; margin-bottom: 6px; }
+      .inv-footer .policy { font-size: 11px; color: #6b7280; margin-bottom: 10px; }
+      .inv-footer .contact-info { display: flex; justify-content: center; gap: 20px; font-size: 11px; color: #4b5563; margin-bottom: 10px; }
+      .inv-footer .contact-info span { display: flex; align-items: center; gap: 4px; }
+      .inv-footer .copyright { font-size: 10px; color: #9ca3af; border-top: 1px dashed #d1d5db; padding-top: 10px; }
+    }
+  </style>
+</head>
+<body data-title="অর্ডার বিস্তারিত">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head no-print">
+        <h1 id="pageTitle">অর্ডার বিস্তারিত</h1>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a href="orders.html" class="btn btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> ফিরে যান
+          </a>
+          <button class="btn btn-primary" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> প্রিন্ট ইনভয়েস
+          </button>
+        </div>
+      </div>
+
+      <div id="orderContent">
+        <p style="text-align:center;padding:60px;color:var(--gray-500)">
+          <i class="fa-solid fa-spinner fa-spin"></i> অর্ডার লোড হচ্ছে...
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="invoicePrintArea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+
+<script>
+  requireAdmin();
+
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get('id');
+  const autoPrint = params.get('print') === '1';
+
+  const STATUS_LABELS = {
+    pending: 'অপেক্ষমাণ', confirmed: 'কনফার্ম', packed: 'প্যাকড',
+    shipped: 'শিপড', delivered: 'ডেলিভার্ড', cancelled: 'বাতিল'
+  };
+
+  const PAYMENT_LABELS = {
+    cod: 'ক্যাশ অন ডেলিভারি', bkash: 'বিকাশ', nagad: 'নগদ', card: 'কার্ড', aamarpay: 'aamarPay'
+  };
+
+  function numberToBanglaWords(num) {
+    if (!num || num <= 0) return 'শূন্য টাকা মাত্র';
+    const ones = ['', 'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'সাত', 'আট', 'নয়', 'দশ', 'এগারো', 'বারো', 'তেরো', 'চৌদ্দ', 'পনেরো', 'ষোলো', 'সতেরো', 'আঠারো', 'ঊনিশ'];
+    const tens = ['', '', 'বিশ', 'ত্রিশ', 'চল্লিশ', 'পঞ্চাশ', 'ষাট', 'সত্তর', 'আশি', 'নব্বই'];
+    function twoDigit(n) { if (n < 20) return ones[n]; const t = Math.floor(n / 10); const o = n % 10; return tens[t] + (o ? ' ' + ones[o] : ''); }
+    function threeDigit(n) { const h = Math.floor(n / 100); const r = n % 100; let str = ''; if (h) str += ones[h] + 'শত'; if (r) str += (str ? ' ' : '') + twoDigit(r); return str; }
+    const taka = Math.floor(num);
+    const crore = Math.floor(taka / 10000000);
+    const lakh = Math.floor((taka % 10000000) / 100000);
+    const thousand = Math.floor((taka % 100000) / 1000);
+    const rest = taka % 1000;
+    let result = '';
+    if (crore) result += threeDigit(crore) + ' কোটি';
+    if (lakh) result += (result ? ' ' : '') + twoDigit(lakh) + ' লক্ষ';
+    if (thousand) result += (result ? ' ' : '') + twoDigit(thousand) + ' হাজার';
+    if (rest) result += (result ? ' ' : '') + threeDigit(rest);
+    if (!result) result = 'শূন্য';
+    return result + ' টাকা মাত্র';
+  }
+
+  async function loadOrderDetails() {
+    const container = document.getElementById('orderContent');
+
+    if (!orderId) {
+      container.innerHTML = `<div class="empty-state"><h3>অর্ডার আইডি পাওয়া যায়নি</h3></div>`;
+      return;
+    }
+
+    try {
+      // ✅ order_number দিয়ে ডাটা খোঁজা হচ্ছে
+      const { data: order, error } = await supabaseClient
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('order_number', orderId)
+        .single();
+
+      if (error || !order) throw new Error('অর্ডারটি খুঁজে পাওয়া যায়নি');
+
+      document.getElementById('pageTitle').textContent = 'অর্ডার #' + order.order_number;
+      document.title = 'অর্ডার #' + order.order_number + ' — কাচাবাজার Admin';
+
+      const items = order.order_items || [];
+      const subtotal = Number(order.subtotal) || 0;
+      const delivery = Number(order.delivery) || 0;
+      const discount = Number(order.discount) || 0;
+      const total = Number(order.total) || 0;
+      const grandTotal = total - discount;
+      const isPaid = order.payment_status === 'paid';
+
+      container.innerHTML = `
+        <div class="order-detail-grid">
+          <div>
+            <div class="card">
+              <div class="card-head"><h2>👤 কাস্টমার তথ্য</h2></div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px">
+                  <div><small style="color:var(--gray-500)">নাম</small><div><strong>${order.customer_name}</strong></div></div>
+                  <div><small style="color:var(--gray-500)">মোবাইল</small><div><strong>${order.customer_phone}</strong></div></div>
+                  <div style="grid-column:1/-1"><small style="color:var(--gray-500)">ঠিকানা</small><div>${order.customer_address || '—'}</div></div>
+                  <div><small style="color:var(--gray-500)">এলাকা</small><div>${order.area || '—'}</div></div>
+                  <div><small style="color:var(--gray-500)">ডেলিভারি স্লট</small><div>${order.delivery_slot || '—'}</div></div>
+                  <div><small style="color:var(--gray-500)">অর্ডারের তারিখ</small><div>${formatDate(order.created_at)}</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h2>📦 পণ্যসমূহ</h2></div>
+              <div class="card-body">
+                ${items.length ? `
+                  <div class="table-wrap">
+                    <table class="items-table">
+                      <thead>
+                        <tr>
+                          <th>পণ্য</th>
+                          <th>একক দাম</th>
+                          <th>পরিমাণ</th>
+                          <th style="text-align:right">মোট</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${items.map(it => `
+                          <tr>
+                            <td><strong>${it.name}</strong><br><small style="color:var(--gray-500)">প্রতি ${it.unit || 'কেজি'}</small></td>
+                            <td>${formatTk(it.price)}</td>
+                            <td>${it.qty}</td>
+                            <td style="text-align:right"><strong>${formatTk(it.price * it.qty)}</strong></td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                ` : '<p style="color:var(--gray-500)">পণ্যের বিস্তারিত তথ্য পাওয়া যায়নি</p>'}
+
+                <div class="summary-box">
+                  <div><span>সাবটোটাল</span><span>${formatTk(subtotal)}</span></div>
+                  <div><span>ডেলিভারি</span><span>${delivery === 0 ? 'ফ্রি' : formatTk(delivery)}</span></div>
+                  ${discount ? `<div><span>ডিসকাউন্ট</span><span style="color:var(--red-500)">-${formatTk(discount)}</span></div>` : ''}
+                  <div class="total"><span>সর্বমোট</span><span>${formatTk(grandTotal)}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h2>💳 পেমেন্ট</h2></div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px">
+                  <div>
+                    <small style="color:var(--gray-500)">পদ্ধতি</small>
+                    <div><strong>${PAYMENT_LABELS[order.payment_method] || order.payment_method || '—'}</strong></div>
+                  </div>
+                  <div>
+                    <small style="color:var(--gray-500)">স্ট্যাটাস</small>
+                    <div><span class="badge ${isPaid ? 'badge-paid' : 'badge-unpaid'}">${isPaid ? 'পেইড ✅' : 'আনপেইড'}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="no-print">
+            <div class="card">
+              <div class="card-head"><h2>🔘 স্ট্যাটাস পরিবর্তন</h2></div>
+              <div class="card-body">
+                <div style="margin-bottom:12px">${statusBadge(order.status)}</div>
+                <select class="status-select" id="statusSelect" onchange="updateOrderStatus(this.value)">
+                  <option value="pending" ${order.status==='pending'?'selected':''}>অপেক্ষমাণ</option>
+                  <option value="confirmed" ${order.status==='confirmed'?'selected':''}>কনফার্ম</option>
+                  <option value="packed" ${order.status==='packed'?'selected':''}>প্যাকড</option>
+                  <option value="shipped" ${order.status==='shipped'?'selected':''}>শিপড</option>
+                  <option value="delivered" ${order.status==='delivered'?'selected':''}>ডেলিভার্ড</option>
+                  <option value="cancelled" ${order.status==='cancelled'?'selected':''}>বাতিল</option>
+                </select>
+                ${!isPaid ? `<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center" onclick="markPaid()">
+                  <i class="fa-solid fa-check"></i> পেইড হিসেবে মার্ক করুন
+                </button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      renderInvoice(order, items, subtotal, delivery, discount, grandTotal, isPaid);
+
+      if (autoPrint) {
+        setTimeout(() => window.print(), 600);
+      }
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-box-open"></i>
+          <h3>অর্ডার পাওয়া যায়নি</h3>
+          <p style="color:var(--red-500);margin:10px 0">${err.message}</p>
+          <a href="orders.html" class="btn btn-primary" style="margin-top:16px">সব অর্ডার</a>
+        </div>`;
+    }
+  }
+
+  function renderInvoice(order, items, subtotal, delivery, discount, grandTotal, isPaid) {
+    const area = document.getElementById('invoicePrintArea');
+    const orderDate = formatDate(order.created_at);
+    const paymentLabel = PAYMENT_LABELS[order.payment_method] || order.payment_method;
+    const amountWords = numberToBanglaWords(grandTotal);
+
+    const itemRows = items.map((it, idx) => `
+      <tr>
+        <td class="center">${idx + 1}</td>
+        <td>
+          <strong>${it.name}</strong><br>
+          <span style="font-size: 11px; color: #6b7280;">একক: ${it.unit || 'কেজি'}</span>
+        </td>
+        <td class="center">${it.qty}</td>
+        <td class="right">${formatTk(it.price)}</td>
+        <td class="right">${formatTk(it.price * it.qty)}</td>
+      </tr>
+    `).join('');
+
+    area.innerHTML = `
+      <div class="inv-container">
+        <div class="inv-header">
+          <div class="inv-brand">
+            <div class="inv-logo-box">ক</div>
+            <div class="inv-brand-text">
+              <h1>কাচা<span>বাজার</span></h1>
+              <p>৩ পার্বত্য জেলা থেকে সরাসরি তাজা পণ্য</p>
+            </div>
+          </div>
+          <div class="inv-meta">
+            <div class="inv-title">INVOICE</div>
+            <div class="inv-meta-box">
+              <div><span>ইনভয়েস নং:</span><span>#${order.order_number}</span></div>
+              <div><span>তারিখ:</span><span>${orderDate}</span></div>
+              <div><span>স্ট্যাটাস:</span><span>${STATUS_LABELS[order.status] || order.status}</span></div>
+              <div><span>পেমেন্ট:</span><span>${isPaid ? 'পেইড ✅' : 'আনপেইড ⏳'}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-parties">
+          <div class="inv-party">
+            <h4>বিল টু / Bill To</h4>
+            <p><strong>${order.customer_name}</strong></p>
+            <p><i class="fa-solid fa-phone" style="width:14px; color:#16a34a;"></i> ${order.customer_phone}</p>
+            <p><i class="fa-solid fa-location-dot" style="width:14px; color:#16a34a;"></i> ${order.customer_address}</p>
+            ${order.area ? `<p><strong>এলাকা:</strong> ${order.area}</p>` : ''}
+          </div>
+          <div class="inv-party">
+            <h4>পেমেন্ট তথ্য / Payment Info</h4>
+            <p><strong>পদ্ধতি:</strong> ${paymentLabel}</p>
+            <p><strong>ডেলিভারি স্লট:</strong> ${order.delivery_slot || '—'}</p>
+            <p><strong>ডেলিভারি চার্জ:</strong> ${delivery === 0 ? 'ফ্রি' : formatTk(delivery)}</p>
+            <p><strong>অর্ডারের তারিখ:</strong> ${orderDate}</p>
+          </div>
+        </div>
+
+        <div class="inv-table-wrap">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 5%;">#</th>
+                <th style="width: 45%;">পণ্যের নাম</th>
+                <th class="center" style="width: 10%;">পরিমাণ</th>
+                <th class="right" style="width: 20%;">একক দাম</th>
+                <th class="right" style="width: 20%;">মোট</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>
+
+        <div class="inv-summary-wrap">
+          <div class="inv-summary-left">
+            <div class="amount-words">
+              <strong>কথায় পরিমাণ / Amount in Words</strong>
+              ${amountWords}
+            </div>
+          </div>
+          <div class="inv-summary-right">
+            <div class="summary-row">
+              <span>সাবটোটাল (${items.length}টি পণ্য)</span>
+              <span>${formatTk(subtotal)}</span>
+            </div>
+            <div class="summary-row">
+              <span>ডেলিভারি চার্জ</span>
+              <span>${delivery === 0 ? 'ফ্রি' : formatTk(delivery)}</span>
+            </div>
+            ${discount ? `
+              <div class="summary-row">
+                <span>ডিসকাউন্ট</span>
+                <span style="color:#dc2626;">-${formatTk(discount)}</span>
+              </div>
+            ` : ''}
+            <div class="summary-row grand">
+              <span>সর্বমোট</span>
+              <span>${formatTk(grandTotal)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-footer">
+          <div class="thanks">🙏 ধন্যবাদ! আমাদের সাথে কেনাকাটার জন্য।</div>
+          <div class="policy">পণ্য সংক্রান্ত যেকোনো অভিযোগ বা রিটার্নের জন্য ২৪ ঘণ্টার মধ্যে যোগাযোগ করুন।</div>
+          <div class="contact-info">
+            <span><i class="fa-solid fa-phone"></i> ০১৭০০-০০০০০০</span>
+            <span><i class="fa-solid fa-envelope"></i> info@kachabazar.com</span>
+            <span><i class="fa-solid fa-globe"></i> www.kachabazar.com</span>
+          </div>
+          <div class="copyright">© 2025 কাচাবাজার — সর্বস্বত্ব সংরক্ষিত</div>
+        </div>
+      </div>
+    `;
+  }
+
+  window.updateOrderStatus = async (newStatus) => {
+    if (!confirm(`স্ট্যাটাস "${STATUS_LABELS[newStatus]}" এ পরিবর্তন করবেন?`)) {
+      loadOrderDetails();
+      return;
+    }
+    try {
+      const { error } = await supabaseClient
+        .from('orders')
+        .update({ 
+          status: newStatus,
+          ...(newStatus === 'delivered' ? { payment_status: 'paid' } : {})
+        })
+        .eq('order_number', orderId);
+
+      if (error) throw error;
+      showToast('স্ট্যাটাস আপডেট ✅', 'success');
+      loadOrderDetails();
+    } catch (err) {
+      showToast('আপডেট ব্যর্থ: ' + err.message, 'error');
+    }
+  };
+
+  window.markPaid = async () => {
+    try {
+      const { error } = await supabaseClient
+        .from('orders')
+        .update({ payment_status: 'paid' })
+        .eq('order_number', orderId);
+
+      if (error) throw error;
+      showToast('পেইড হিসেবে মার্ক করা হয়েছে ✅', 'success');
+      loadOrderDetails();
+    } catch (err) {
+      showToast('ব্যর্থ: ' + err.message, 'error');
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', loadOrderDetails);
+</script>
+</body>
+</html>

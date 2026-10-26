@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ইনভেন্টরি লগ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="ইনভেন্টরি লগ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📦 ইনভেন্টরি লগ</h1>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 পণ্যের নাম...">
+        <select id="filterType">
+          <option value="">সব ধরন</option>
+          <option value="in">স্টক ইন</option>
+          <option value="out">স্টক আউট</option>
+          <option value="adjust">অ্যাডজাস্ট</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>তারিখ</th><th>পণ্য</th><th>ধরন</th><th>পরিমাণ</th><th>আগে</th><th>পরে</th><th>কারণ</th></tr>
+              </thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_LOGS = [
+    { id: 1, date: '2025-01-21T10:30:00', product: 'পাহাড়ি মধু', type: 'out', qty: 2, before: 12, after: 10, reason: 'অর্ডার #KC100001' },
+    { id: 2, date: '2025-01-21T09:15:00', product: 'দেশি টমেটো', type: 'in', qty: 50, before: 0, after: 50, reason: 'নতুন স্টক এসেছে' },
+    { id: 3, date: '2025-01-20T18:00:00', product: 'কাপ্তাই রুই মাছ', type: 'out', qty: 1, before: 9, after: 8, reason: 'অর্ডার #KC100003' }
+  ];
+
+  function getLogs() { return AdminStore.get('inventory_log', DEFAULT_LOGS); }
+
+  function render() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    const type = document.getElementById('filterType').value;
+    let list = getLogs();
+    if (search) list = list.filter(l => l.product.toLowerCase().includes(search));
+    if (type) list = list.filter(l => l.type === type);
+
+    const typeLabels = { in: '📥 স্টক ইন', out: '📤 স্টক আউট', adjust: '⚙️ অ্যাডজাস্ট' };
+    const typeBadges = { in: 'badge-active', out: 'badge-cancelled', adjust: 'badge-pending' };
+
+    document.getElementById('logBody').innerHTML = list.map(l => `
+      <tr>
+        <td>${new Date(l.date).toLocaleString('bn-BD', { dateStyle: 'short', timeStyle: 'short' })}</td>
+        <td><strong>${l.product}</strong></td>
+        <td><span class="badge ${typeBadges[l.type]}">${typeLabels[l.type]}</span></td>
+        <td><strong>${l.type === 'in' ? '+' : l.type === 'out' ? '-' : ''}${l.qty}</strong></td>
+        <td>${l.before}</td>
+        <td>${l.after}</td>
+        <td>${l.reason}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো লগ নেই</td></tr>';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('filterType').addEventListener('change', render);
+  });
+</script>
+</body>
+</html>

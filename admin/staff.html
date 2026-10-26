@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>স্টাফ ম্যানেজমেন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="স্টাফ ম্যানেজমেন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>👥 স্টাফ / ইউজার ম্যানেজমেন্ট</h1>
+        <button class="btn btn-primary" onclick="openAddUserModal()">
+          <i class="fa-solid fa-plus"></i> নতুন ইউজার
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="font-size:13px;padding:14px 20px;">
+          <i class="fa-solid fa-info-circle" style="color:var(--green-600)"></i>
+          <strong>ডেমো মোড:</strong> ইউজার localStorage-এ সেভ হয়।
+          Supabase সেটআপ করলে আসল authentication হবে।
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>নাম</th>
+                  <th>ইমেইল</th>
+                  <th>ফোন</th>
+                  <th>রোল</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="staffBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- নতুন ইউজার Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ইউজার তৈরি করুন</h3>
+      <button class="close-modal" onclick="closeModal('userModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editUserId">
+      <div class="form-row single">
+        <div class="form-group">
+          <label>পূর্ণ নাম <span class="req">*</span></label>
+          <input type="text" id="userName" placeholder="করিম উদ্দিন">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ইমেইল <span class="req">*</span></label>
+          <input type="email" id="userEmail" placeholder="staff@kachabazar.com">
+        </div>
+        <div class="form-group">
+          <label>ফোন</label>
+          <input type="text" id="userPhone" placeholder="017XXXXXXXX">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>পাসওয়ার্ড <span class="req">*</span></label>
+          <input type="text" id="userPassword" placeholder="কমপক্ষে ৬ অক্ষর">
+        </div>
+        <div class="form-group">
+          <label>রোল <span class="req">*</span></label>
+          <select id="userRole">
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+            <option value="editor">Editor</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('userModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveUser()">সেভ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ সঠিক script order -->
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_USERS = [
+    { id: 'u1', name: 'Admin', email: 'admin@kachabazar.com', phone: '', role: 'admin', password: 'admin123', active: true },
+    { id: 'u2', name: 'Manager', email: 'manager@kachabazar.com', phone: '', role: 'manager', password: 'manager123', active: true },
+    { id: 'u3', name: 'Editor', email: 'editor@kachabazar.com', phone: '', role: 'editor', password: 'editor123', active: true }
+  ];
+
+  function getUsers() {
+    const stored = AdminStore.get('staff_users', null);
+    if (!stored || !Array.isArray(stored) || !stored.length) {
+      AdminStore.set('staff_users', DEFAULT_USERS);
+      return DEFAULT_USERS;
+    }
+    return stored;
+  }
+  function saveUsers(list) { AdminStore.set('staff_users', list); }
+
+  function render() {
+    const users = getUsers();
+    const roleLabels = { admin: '👑 Admin', manager: '💼 Manager', editor: '📝 Editor', staff: '👨‍💼 Staff' };
+    document.getElementById('staffBody').innerHTML = users.map(u => `
+      <tr>
+        <td><strong>${u.name}</strong></td>
+        <td>${u.email}</td>
+        <td>${u.phone || '—'}</td>
+        <td><span class="badge ${u.role === 'admin' ? 'badge-active' : 'badge-pending'}">${roleLabels[u.role] || u.role}</span></td>
+        <td><span class="badge ${u.active !== false ? 'badge-active' : 'badge-inactive'}">${u.active !== false ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+        <td class="actions">
+          <button onclick="editUser('${u.id}')" title="এডিট"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteUser('${u.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো ইউজার নেই</td></tr>';
+  }
+
+  function openAddUserModal() {
+    document.getElementById('editUserId').value = '';
+    ['userName', 'userEmail', 'userPhone', 'userPassword'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('userRole').value = 'staff';
+    document.getElementById('modalTitle').textContent = 'নতুন ইউজার তৈরি করুন';
+    document.getElementById('userModal').classList.add('show');
+  }
+
+  function editUser(id) {
+    const u = getUsers().find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('editUserId').value = u.id;
+    document.getElementById('userName').value = u.name;
+    document.getElementById('userEmail').value = u.email;
+    document.getElementById('userPhone').value = u.phone || '';
+    document.getElementById('userPassword').value = u.password || '';
+    document.getElementById('userRole').value = u.role;
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + u.name;
+    document.getElementById('userModal').classList.add('show');
+  }
+
+  function saveUser() {
+    const id = document.getElementById('editUserId').value;
+    const name = document.getElementById('userName').value.trim();
+    const email = document.getElementById('userEmail').value.trim().toLowerCase();
+    const phone = document.getElementById('userPhone').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const role = document.getElementById('userRole').value;
+
+    if (!name || !email || !password) {
+      showToast('নাম, ইমেইল ও পাসওয়ার্ড দিন', 'error'); return;
+    }
+    if (password.length < 6) {
+      showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর', 'error'); return;
+    }
+
+    const users = getUsers();
+    if (id) {
+      const idx = users.findIndex(u => u.id === id);
+      if (idx < 0) return;
+      users[idx] = { ...users[idx], name, email, phone, password, role };
+      showToast('আপডেট ✅', 'success');
+    } else {
+      if (users.some(u => u.email === email)) {
+        showToast('এই ইমেইল আগে আছে', 'error'); return;
+      }
+      users.push({ id: 'u' + Date.now(), name, email, phone, password, role, active: true });
+      showToast('ইউজার তৈরি ✅', 'success');
+    }
+    saveUsers(users);
+    closeModal('userModal');
+    render();
+  }
+
+  function deleteUser(id) {
+    if (!confirm('ডিলিট করবেন?')) return;
+    saveUsers(getUsers().filter(u => u.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>

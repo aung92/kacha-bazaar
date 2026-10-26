@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>৩ পার্বত্য জেলা — কাচাবাজার</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .district-detail {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: center;
+      background: #fff;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 32px;
+    }
+    .district-detail:nth-child(even) { direction: rtl; }
+    .district-detail:nth-child(even) > * { direction: ltr; }
+    .district-detail img { width: 100%; height: 300px; object-fit: cover; }
+    .district-detail-info { padding: 28px; }
+    .district-detail-info h2 { font-size: 28px; margin-bottom: 8px; }
+    .district-detail-info p { color: var(--gray-700); font-size: 15px; margin-bottom: 16px; }
+    .district-detail-info .stats { display: flex; gap: 20px; margin-bottom: 16px; }
+    .district-detail-info .stats div strong { display: block; font-size: 20px; color: var(--green-700); }
+    .district-detail-info .stats div span { font-size: 12px; color: var(--gray-500); }
+    @media(max-width:768px) {
+      .district-detail { grid-template-columns: 1fr; }
+      .district-detail:nth-child(even) { direction: ltr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:40px">
+      <h1 style="font-size:32px;margin-bottom:8px">🌄 আমাদের ৩ পার্বত্য জেলা</h1>
+      <p style="color:var(--gray-500);max-width:640px;margin:0 auto">
+        রাঙ্গামাটি, খাগড়াছড়ি ও বান্দরবান — এই তিন পার্বত্য জেলার কৃষকদের কাছ থেকে সরাসরি সংগ্রহ করা পণ্য আপনার দরজায়।
+      </p>
+    </div>
+    <div id="districtDetails">
+      <p style="text-align:center;color:var(--gray-500);padding:40px">
+        <i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...
+      </p>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/main.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const el = document.getElementById('districtDetails');
+    if (!el || typeof DISTRICTS === 'undefined') return;
+
+    // API থেকে পণ্য লোড
+    let allProducts = [];
+    try {
+      allProducts = await loadProducts();
+    } catch (e) {
+      allProducts = PRODUCTS;
+    }
+
+    el.innerHTML = DISTRICTS.map(d => {
+      const items = allProducts.filter(p => p.district === d.id);
+      const farmers = FARMERS.filter(f => f.district === d.id);
+      return `
+        <div class="district-detail">
+          <img src="${d.img}" alt="${d.name}">
+          <div class="district-detail-info">
+            <h2>${d.emoji} ${d.name}</h2>
+            <p>${d.desc}</p>
+            <div class="stats">
+              <div><strong>${items.length}</strong><span>পণ্য</span></div>
+              <div><strong>${farmers.length}</strong><span>কৃষক</span></div>
+            </div>
+            <a href="shop.html?district=${d.id}" class="btn btn-primary">
+              ${d.name} থেকে কিনুন <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  });
+</script>
+<script src="js/pwa-init.js"></script>
+</body>
+</html>

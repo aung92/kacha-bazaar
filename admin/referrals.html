@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>রেফারেল — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="রেফারেল">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🎓 রেফারেল সিস্টেম</h1>
+        <button class="btn btn-primary" onclick="saveSettings()"><i class="fa-solid fa-save"></i> সেটিংস সেভ</button>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-info"><h3>মোট রেফারেল</h3><strong id="statTotal">০</strong></div><div class="stat-icon purple"><i class="fa-solid fa-share-nodes"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>সফল</h3><strong id="statSuccess">০</strong></div><div class="stat-icon green"><i class="fa-solid fa-check"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>মোট রিওয়ার্ড</h3><strong id="statReward">৳০</strong></div><div class="stat-icon orange"><i class="fa-solid fa-gift"></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>রেফারেল সেটিংস</h2></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group"><label>রেফারার রিওয়ার্ড (৳)</label><input type="number" id="refReward" min="0" value="50"></div>
+            <div class="form-group"><label>নতুন কাস্টমার ডিসকাউন্ট (৳)</label><input type="number" id="newReward" min="0" value="50"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>রেফারেল হিস্ট্রি</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>রেফারার</th><th>নতুন কাস্টমার</th><th>তারিখ</th><th>রিওয়ার্ড</th><th>স্ট্যাটাস</th></tr></thead>
+              <tbody id="refBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_REF = {
+    reward: 50,
+    newReward: 50,
+    history: [
+      { id: 1, referrer: 'রফিক আহমেদ', newCustomer: 'সাদিয়া ইসলাম', date: '2025-01-20', reward: 50, status: 'paid' },
+      { id: 2, referrer: 'করিম শেখ', newCustomer: 'নাসরিন আক্তার', date: '2025-01-18', reward: 50, status: 'pending' }
+    ]
+  };
+
+  function getRef() { return { ...DEFAULT_REF, ...AdminStore.get('referrals', {}) }; }
+  function saveRef(d) { AdminStore.set('referrals', d); }
+
+  function render() {
+    const d = getRef();
+    document.getElementById('refReward').value = d.reward;
+    document.getElementById('newReward').value = d.newReward;
+
+    document.getElementById('statTotal').textContent = d.history.length;
+    document.getElementById('statSuccess').textContent = d.history.filter(h => h.status === 'paid').length;
+    document.getElementById('statReward').textContent = formatTk(d.history.reduce((s, h) => s + h.reward, 0));
+
+    document.getElementById('refBody').innerHTML = d.history.map(h => `
+      <tr>
+        <td><strong>${h.referrer}</strong></td>
+        <td>${h.newCustomer}</td>
+        <td>${formatDate(h.date)}</td>
+        <td>${formatTk(h.reward)}</td>
+        <td><span class="badge ${h.status === 'paid' ? 'badge-active' : 'badge-pending'}">${h.status === 'paid' ? 'পেইড' : 'অপেক্ষমাণ'}</span></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো রেফারেল নেই</td></tr>';
+  }
+
+  function saveSettings() {
+    const d = getRef();
+    d.reward = +document.getElementById('refReward').value || 0;
+    d.newReward = +document.getElementById('newReward').value || 0;
+    saveRef(d);
+    showToast('সেটিংস সেভ ✅', 'success');
+  }
+
+  render();
+</script>
+</body>
+</html>

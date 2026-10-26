@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>মেসেজ টেম্পলেট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="মেসেজ টেম্পলেট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📝 SMS / ইমেইল টেম্পলেট</h1>
+        <button class="btn btn-primary" onclick="openTplModal()"><i class="fa-solid fa-plus"></i> নতুন টেম্পলেট</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="font-size:13px; padding:14px 20px;">
+          <strong>ভেরিয়েবল:</strong>
+          <code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; margin:0 4px;">{customer_name}</code>
+          <code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; margin:0 4px;">{order_id}</code>
+          <code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; margin:0 4px;">{order_total}</code>
+          <code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; margin:0 4px;">{delivery_date}</code>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>টেম্পলেট নাম</th><th>ধরন</th><th>প্রিভিউ</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="tplBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tplModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন টেম্পলেট</h3>
+      <button class="close-modal" onclick="closeModal('tplModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tplId">
+      <div class="form-row">
+        <div class="form-group"><label>টেম্পলেট নাম <span class="req">*</span></label><input type="text" id="tplName" placeholder="যেমন: অর্ডার কনফার্মেশন"></div>
+        <div class="form-group">
+          <label>ধরন <span class="req">*</span></label>
+          <select id="tplType">
+            <option value="sms">SMS</option>
+            <option value="email">ইমেইল</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>বিষয় (ইমেইলের জন্য)</label><input type="text" id="tplSubject" placeholder="Order Confirmed"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>বডি <span class="req">*</span></label><textarea id="tplBody" rows="5" placeholder="প্রিয় {customer_name}, আপনার অর্ডার {order_id} কনফার্ম হয়েছে..."></textarea></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="tplActive" checked style="width:auto;accent-color:var(--green-600)"><span>সক্রিয়</span></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('tplModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveTpl()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_TPLS = [
+    { id: 1, name: 'অর্ডার কনফার্মেশন', type: 'sms', subject: '', body: 'প্রিয় {customer_name}, আপনার অর্ডার #{order_id} কনফার্ম হয়েছে। মোট: {order_total}। ধন্যবাদ!', active: true },
+    { id: 2, name: 'ডেলিভারি নোটিফিকেশন', type: 'sms', subject: '', body: 'প্রিয় {customer_name}, আপনার অর্ডার #{order_id} ডেলিভারির জন্য পাঠানো হয়েছে।', active: true },
+    { id: 3, name: 'ওয়েলকাম ইমেইল', type: 'email', subject: 'কাচাবাজার পরিবারে স্বাগতম!', body: 'প্রিয় {customer_name}, আমাদের সাথে যোগ দেওয়ার জন্য ধন্যবাদ!', active: true }
+  ];
+
+  function getTpls() { return AdminStore.get('message_templates', DEFAULT_TPLS); }
+  function saveTpls(l) { AdminStore.set('message_templates', l); }
+
+  function render() {
+    document.getElementById('tplBody').innerHTML = getTpls().map(t => `
+      <tr>
+        <td><strong>${t.name}</strong></td>
+        <td>${t.type === 'sms' ? '📱 SMS' : '📧 ইমেইল'}</td>
+        <td><small style="color:var(--gray-600);">${(t.body || '').substring(0, 60)}${t.body.length > 60 ? '...' : ''}</small></td>
+        <td><span class="badge ${t.active ? 'badge-active' : 'badge-inactive'}">${t.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></td>
+        <td class="actions">
+          <button onclick="editTpl(${t.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteTpl(${t.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো টেম্পলেট নেই</td></tr>';
+  }
+
+  function openTplModal() {
+    document.getElementById('tplId').value = '';
+    document.getElementById('tplName').value = '';
+    document.getElementById('tplType').value = 'sms';
+    document.getElementById('tplSubject').value = '';
+    document.getElementById('tplBody').value = '';
+    document.getElementById('tplActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন টেম্পলেট';
+    document.getElementById('tplModal').classList.add('show');
+  }
+
+  function editTpl(id) {
+    const t = getTpls().find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('tplId').value = t.id;
+    document.getElementById('tplName').value = t.name;
+    document.getElementById('tplType').value = t.type;
+    document.getElementById('tplSubject').value = t.subject || '';
+    document.getElementById('tplBody').value = t.body;
+    document.getElementById('tplActive').checked = t.active;
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + t.name;
+    document.getElementById('tplModal').classList.add('show');
+  }
+
+  function saveTpl() {
+    const id = document.getElementById('tplId').value;
+    const name = document.getElementById('tplName').value.trim();
+    const body = document.getElementById('tplBody').value.trim();
+    if (!name || !body) { showToast('নাম ও বডি দিন', 'error'); return; }
+    const data = {
+      name, body,
+      type: document.getElementById('tplType').value,
+      subject: document.getElementById('tplSubject').value.trim(),
+      active: document.getElementById('tplActive').checked
+    };
+    const list = getTpls();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data });
+    }
+    saveTpls(list);
+    closeModal('tplModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteTpl(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveTpls(getTpls().filter(t => t.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

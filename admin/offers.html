@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>অফার / ক্যাম্পেইন — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="অফার / ক্যাম্পেইন">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🔥 অফার / ক্যাম্পেইন</h1>
+        <button class="btn btn-primary" onclick="openOfferModal()"><i class="fa-solid fa-plus"></i> নতুন অফার</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>শিরোনাম</th>
+                  <th>ধরন</th>
+                  <th>ছাড়</th>
+                  <th>সময়সীমা</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="offerBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="offerModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন অফার</h3>
+      <button class="close-modal" onclick="closeModal('offerModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="offerId">
+      <div class="form-row single">
+        <div class="form-group"><label>শিরোনাম <span class="req">*</span></label><input type="text" id="offerTitle" placeholder="যেমন: শীতে মধুতে ২০% ছাড়"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ধরন <span class="req">*</span></label>
+          <select id="offerType">
+            <option value="percent">শতাংশ (%)</option>
+            <option value="flat">ফ্ল্যাট (৳)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>পরিমাণ <span class="req">*</span></label><input type="number" id="offerAmount" min="0" placeholder="20"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>শুরু <span class="req">*</span></label><input type="date" id="offerStart"></div>
+        <div class="form-group"><label>শেষ <span class="req">*</span></label><input type="date" id="offerEnd"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>ব্যানার ইমেজ URL</label><input type="url" id="offerBanner" placeholder="https://..."></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="offerActive" checked style="width:auto;accent-color:var(--green-600)"><span>সক্রিয়</span></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('offerModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveOffer()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_OFFERS = [
+    { id: 1, title: 'শীতে মধুতে ২০% ছাড়', type: 'percent', amount: 20, start: '2025-01-01', end: '2025-02-28', banner: '', active: true },
+    { id: 2, title: 'নতুন কাস্টমার ৫০৳ ছাড়', type: 'flat', amount: 50, start: '2025-01-01', end: '2025-12-31', banner: '', active: true }
+  ];
+  function getOffers() { return AdminStore.get('offers', DEFAULT_OFFERS); }
+  function saveOffers(l) { AdminStore.set('offers', l); }
+  function isExpired(o) { return new Date(o.end) < new Date(); }
+
+  function render() {
+    document.getElementById('offerBody').innerHTML = getOffers().map(o => {
+      const expired = isExpired(o);
+      const status = !o.active ? '<span class="badge badge-inactive">নিষ্ক্রিয়</span>' : expired ? '<span class="badge badge-cancelled">এক্সপায়ার্ড</span>' : '<span class="badge badge-active">সক্রিয়</span>';
+      const disc = o.type === 'percent' ? `${o.amount}%` : formatTk(o.amount);
+      return `<tr>
+        <td><strong>${o.title}</strong></td>
+        <td>${o.type === 'percent' ? 'শতাংশ' : 'ফ্ল্যাট'}</td>
+        <td><strong>${disc}</strong></td>
+        <td>${formatDate(o.start)} — ${formatDate(o.end)}</td>
+        <td>${status}</td>
+        <td class="actions">
+          <button onclick="editOffer(${o.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteOffer(${o.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো অফার নেই</td></tr>';
+  }
+
+  function openOfferModal() {
+    document.getElementById('offerId').value = '';
+    document.getElementById('offerTitle').value = '';
+    document.getElementById('offerType').value = 'percent';
+    document.getElementById('offerAmount').value = '';
+    document.getElementById('offerStart').value = new Date().toISOString().slice(0,10);
+    document.getElementById('offerEnd').value = '';
+    document.getElementById('offerBanner').value = '';
+    document.getElementById('offerActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন অফার';
+    document.getElementById('offerModal').classList.add('show');
+  }
+
+  function editOffer(id) {
+    const o = getOffers().find(x => x.id === id);
+    if (!o) return;
+    document.getElementById('offerId').value = o.id;
+    document.getElementById('offerTitle').value = o.title;
+    document.getElementById('offerType').value = o.type;
+    document.getElementById('offerAmount').value = o.amount;
+    document.getElementById('offerStart').value = o.start;
+    document.getElementById('offerEnd').value = o.end;
+    document.getElementById('offerBanner').value = o.banner || '';
+    document.getElementById('offerActive').checked = o.active;
+    document.getElementById('modalTitle').textContent = 'এডিট অফার';
+    document.getElementById('offerModal').classList.add('show');
+  }
+
+  function saveOffer() {
+    const id = document.getElementById('offerId').value;
+    const title = document.getElementById('offerTitle').value.trim();
+    const amount = +document.getElementById('offerAmount').value;
+    const start = document.getElementById('offerStart').value;
+    const end = document.getElementById('offerEnd').value;
+    if (!title || !amount || !start || !end) { showToast('সব ঘর পূরণ করুন', 'error'); return; }
+    if (new Date(end) < new Date(start)) { showToast('শেষ তারিখ শুরুর পরে হতে হবে', 'error'); return; }
+
+    const data = {
+      title, amount, start, end,
+      type: document.getElementById('offerType').value,
+      banner: document.getElementById('offerBanner').value.trim(),
+      active: document.getElementById('offerActive').checked
+    };
+    const list = getOffers();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data });
+    }
+    saveOffers(list);
+    closeModal('offerModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteOffer(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveOffers(getOffers().filter(o => o.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

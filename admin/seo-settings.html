@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO সেটিংস — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="SEO সেটিংস">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🔍 SEO সেটিংস</h1>
+        <button class="btn btn-primary" onclick="saveSEO()"><i class="fa-solid fa-save"></i> সেভ</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>🌐 হোমপেজ</h2></div>
+        <div class="card-body">
+          <div class="form-row single">
+            <div class="form-group"><label>Meta Title (৬০ অক্ষর)</label><input type="text" id="homeTitle" maxlength="60" placeholder="কাচাবাজার — তাজা পাহাড়ি পণ্য"></div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group"><label>Meta Description (১৬০ অক্ষর)</label><textarea id="homeDesc" rows="3" maxlength="160" placeholder="রাঙ্গামাটি, খাগড়াছড়ি, বান্দরবানের কৃষকদের কাছ থেকে সরাসরি তাজা পণ্য..."></textarea></div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group"><label>Meta Keywords</label><input type="text" id="homeKeywords" placeholder="তাজা সবজি, পাহাড়ি মধু, কাচাবাজার"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>📊 Google Analytics</h2></div>
+        <div class="card-body">
+          <div class="form-row single">
+            <div class="form-group"><label>Measurement ID</label><input type="text" id="gaId" placeholder="G-XXXXXXXXXX"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>🔗 Open Graph (সোশ্যাল শেয়ার)</h2></div>
+        <div class="card-body">
+          <div class="form-row single">
+            <div class="form-group"><label>OG Title</label><input type="text" id="ogTitle"></div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group"><label>OG Description</label><textarea id="ogDesc" rows="2"></textarea></div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group"><label>OG Image URL</label><input type="url" id="ogImage"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_SEO = { homeTitle: '', homeDesc: '', homeKeywords: '', gaId: '', ogTitle: '', ogDesc: '', ogImage: '' };
+  function getSEO() { return { ...DEFAULT_SEO, ...AdminStore.get('seo_settings', {}) }; }
+  function saveSEOData(d) { AdminStore.set('seo_settings', d); }
+
+  function load() {
+    const s = getSEO();
+    Object.keys(DEFAULT_SEO).forEach(k => {
+      const el = document.getElementById(k);
+      if (el) el.value = s[k] || '';
+    });
+  }
+
+  function saveSEO() {
+    const s = {};
+    Object.keys(DEFAULT_SEO).forEach(k => {
+      const el = document.getElementById(k);
+      if (el) s[k] = el.value;
+    });
+    saveSEOData(s);
+    showToast('SEO সেটিংস সেভ ✅', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

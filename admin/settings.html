@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>সেটিংস — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .settings-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      background: #fff;
+      padding: 8px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .settings-tabs button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .settings-tabs button.active {
+      background: var(--green-600);
+      color: #fff;
+    }
+    .settings-tabs button:hover:not(.active) {
+      background: var(--gray-100);
+    }
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; }
+
+    .admin-user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .admin-user-row:last-child { border-bottom: none; }
+    .admin-user-row strong { font-size: 14px; }
+    .admin-user-row small { color: var(--gray-500); font-size: 12px; }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--gray-300);
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--green-600);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(22px);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      background: var(--gray-50);
+      border-radius: 10px;
+      margin-bottom: 14px;
+      border: 1px solid var(--gray-200);
+    }
+    .toggle-row.disabled { opacity: 0.55; }
+    .toggle-row .toggle-info { flex: 1; }
+    .toggle-row .toggle-info strong {
+      display: block;
+      font-size: 14px;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+    .toggle-row .toggle-info small {
+      font-size: 12px;
+      color: var(--gray-500);
+      line-height: 1.5;
+    }
+
+    .payment-field {
+      margin-top: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 13px;
+      width: 100%;
+      font-family: inherit;
+    }
+    .payment-field.hidden { display: none; }
+  </style>
+</head>
+<body data-title="সেটিংস">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>⚙️ সেটিংস</h1>
+        <button class="btn btn-primary" onclick="saveAllSettings()">
+          <i class="fa-solid fa-save"></i> সব সেভ করুন
+        </button>
+      </div>
+
+      <div class="settings-tabs">
+        <button class="active" data-tab="general">সাধারণ</button>
+        <button data-tab="delivery">ডেলিভারি</button>
+        <button data-tab="payment">পেমেন্ট</button>
+        <button data-tab="tax">ট্যাক্স</button>
+        <button data-tab="admins">অ্যাডমিন</button>
+        <button data-tab="maintenance">সিস্টেম</button>
+      </div>
+
+      <!-- ============================================
+           GENERAL (unchanged)
+           ============================================ -->
+      <div class="settings-panel active" id="panel-general">
+        <div class="card">
+          <div class="card-head"><h2>🏪 সাইট তথ্য</h2></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>সাইটের নাম</label>
+                <input type="text" id="siteName">
+              </div>
+              <div class="form-group">
+                <label>ট্যাগলাইন</label>
+                <input type="text" id="siteTagline">
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label>লোগো URL</label>
+                <input type="url" id="siteLogo" placeholder="https://...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>ফোন</label>
+                <input type="tel" id="sitePhone">
+              </div>
+              <div class="form-group">
+                <label>ইমেইল</label>
+                <input type="email" id="siteEmail">
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label>ঠিকানা</label>
+                <input type="text" id="siteAddress">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>🌐 সোশ্যাল লিংক</h2></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Facebook</label>
+                <input type="url" id="socialFacebook" placeholder="https://facebook.com/...">
+              </div>
+              <div class="form-group">
+                <label>Instagram</label>
+                <input type="url" id="socialInstagram" placeholder="https://instagram.com/...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>WhatsApp</label>
+                <input type="text" id="socialWhatsapp" placeholder="+880...">
+              </div>
+              <div class="form-group">
+                <label>YouTube</label>
+                <input type="url" id="socialYoutube" placeholder="https://youtube.com/...">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           DELIVERY (unchanged)
+           ============================================ -->
+      <div class="settings-panel" id="panel-delivery">
+        <div class="card">
+          <div class="card-head"><h2>🚚 ডেলিভারি সেটিংস</h2></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>ফ্রি ডেলিভারি থ্রেশহোল্ড (৳)</label>
+                <input type="number" id="freeDelivery" min="0">
+              </div>
+              <div class="form-group">
+                <label>ডেলিভারি চার্জ (৳)</label>
+                <input type="number" id="deliveryCharge" min="0">
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label>ডেলিভারি এরিয়া</label>
+                <textarea id="deliveryAreas" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>🕐 ডেলিভারি স্লট</h2></div>
+          <div class="card-body">
+            <div class="toggle-row" id="slotToggleRow">
+              <div class="toggle-info">
+                <strong>চেকআউটে ডেলিভারি স্লট দেখাবে</strong>
+                <small>বন্ধ করলে গ্রাহক চেকআউটে কোনো স্লট সিলেক্ট করতে পারবে না</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showDeliverySlot" onchange="toggleSlotSection()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div id="slotTextArea">
+              <div class="form-group">
+                <label>ডেলিভারি স্লট তালিকা</label>
+                <textarea id="deliverySlots" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>🚚 ডেলিভারি পার্টনার সিলেকশন</h2></div>
+          <div class="card-body">
+            <div class="toggle-row" id="partnerToggleRow">
+              <div class="toggle-info">
+                <strong>চেকআউটে ডেলিভারি পার্টনার দেখাবে</strong>
+                <small>Pathao, RedX, Steadfast ইত্যাদি</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showDeliveryPartner" onchange="togglePartnerSection()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           ✅ PAYMENT (UPDATED — aamarPay যুক্ত)
+           ============================================ -->
+      <div class="settings-panel" id="panel-payment">
+
+        <!-- Manual Payment Methods -->
+        <div class="card">
+          <div class="card-head"><h2>💳 ম্যানুয়াল পেমেন্ট পদ্ধতি</h2></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+              <label style="display:flex;gap:10px;align-items:center;padding:14px;border:1px solid var(--gray-200);border-radius:10px;cursor:pointer">
+                <input type="checkbox" id="payCod" style="width:auto;accent-color:var(--green-600)">
+                <div>
+                  <strong>💵 ক্যাশ অন ডেলিভারি</strong>
+                  <small style="display:block;color:var(--gray-500)">পণ্য হাতে পেয়ে পেমেন্ট</small>
+                </div>
+              </label>
+
+              <div style="padding:14px;border:1px solid var(--gray-200);border-radius:10px">
+                <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+                  <input type="checkbox" id="payBkash" style="width:auto;accent-color:var(--green-600)" onchange="togglePaymentField('bkash')">
+                  <div style="flex:1">
+                    <strong>📱 বিকাশ (ম্যানুয়াল)</strong>
+                    <small style="display:block;color:var(--gray-500)">Customer টাকা পাঠাবে, admin verify করবে</small>
+                  </div>
+                </label>
+                <input type="text" id="bkashNumber" placeholder="বিকাশ নম্বর" class="payment-field">
+              </div>
+
+              <div style="padding:14px;border:1px solid var(--gray-200);border-radius:10px">
+                <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+                  <input type="checkbox" id="payNagad" style="width:auto;accent-color:var(--green-600)" onchange="togglePaymentField('nagad')">
+                  <div style="flex:1">
+                    <strong>📱 নগদ (ম্যানুয়াল)</strong>
+                    <small style="display:block;color:var(--gray-500)">Customer টাকা পাঠাবে, admin verify করবে</small>
+                  </div>
+                </label>
+                <input type="text" id="nagadNumber" placeholder="নগদ নম্বর" class="payment-field">
+              </div>
+
+              <label style="display:flex;gap:10px;align-items:center;padding:14px;border:1px solid var(--gray-200);border-radius:10px;cursor:pointer">
+                <input type="checkbox" id="payCard" style="width:auto;accent-color:var(--green-600)">
+                <div>
+                  <strong>💳 কার্ড (ম্যানুয়াল)</strong>
+                  <small style="display:block;color:var(--gray-500)">Manual card payment</small>
+                </div>
+              </label>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ aamarPay Payment Gateway (NEW) -->
+        <div class="card" style="border: 2px solid var(--green-600);">
+          <div class="card-head" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-bottom: 2px solid var(--green-600);">
+            <h2>🚀 aamarPay Payment Gateway</h2>
+            <span class="badge badge-active" id="aamarpayModeBadge">Sandbox</span>
+          </div>
+          <div class="card-body">
+
+            <!-- Enable Toggle -->
+            <div class="toggle-row" style="background: #f0fdf4; border: 1px solid var(--green-200, #bbf7d0);">
+              <div class="toggle-info">
+                <strong>aamarPay চালু করুন</strong>
+                <small>চালু করলে customer চেকআউটে aamarPay দিয়ে পেমেন্ট করতে পারবে (bKash/Nagad/Card/Bank)</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="aamarpayEnabled" onchange="toggleAamarpaySection()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Config Section -->
+            <div id="aamarpayConfig" style="display:none;">
+
+              <!-- Mode -->
+              <div class="form-group" style="margin-bottom:16px;">
+                <label>Mode</label>
+                <select id="aamarpayMode" onchange="onAamarpayModeChange()" 
+                        style="width:100%; padding:10px 12px; border:1px solid var(--gray-200); border-radius:var(--radius); font-family:inherit; font-size:14px;">
+                  <option value="sandbox">🧪 Sandbox (Test) — কোনো real টাকা কাটবে না</option>
+                  <option value="live">🚀 Live (Production) — real payment</option>
+                </select>
+              </div>
+
+              <!-- Sandbox Info -->
+              <div id="aamarpaySandboxInfo" style="background:#eff6ff; padding:14px; border-radius:8px; border-left:4px solid #3b82f6; margin-bottom:16px;">
+                <strong style="color:#1e40af; font-size:13px; display:block; margin-bottom:8px;">
+                  <i class="fa-solid fa-flask"></i> Sandbox Credentials (Auto-ব্যবহৃত)
+                </strong>
+                <div style="font-size:12px; color:#4b5563; line-height:1.9;">
+                  <div><strong>Store ID:</strong> <code style="background:#fff; padding:2px 6px; border-radius:4px;">aamarpaytest</code></div>
+                  <div><strong>Signature Key:</strong> <code style="background:#fff; padding:2px 6px; border-radius:4px; font-size:10px;">dbb74894e82415a2f7ff0ec3a97e4183</code></div>
+                  <div style="margin-top:8px; color:#6b7280;">
+                    <i class="fa-solid fa-info-circle"></i> এই credentials শুধু test-এর জন্য। Live-এ যেতে চাইলে mode বদলান।
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Credentials -->
+              <div id="aamarpayLiveInfo" style="display:none;">
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label>Store ID (Live) <span class="req">*</span></label>
+                  <input type="text" id="aamarpayStoreId" placeholder="আপনার live store ID">
+                </div>
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label>Signature Key (Live) <span class="req">*</span></label>
+                  <input type="password" id="aamarpaySignatureKey" placeholder="আপনার live signature key">
+                  <small>aamarPay merchant dashboard → Settings → API Keys</small>
+                </div>
+              </div>
+
+              <!-- URLs -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Success URL</label>
+                  <input type="url" id="aamarpaySuccessUrl" placeholder="https://yoursite.com/payment-success">
+                  <small>Payment সফল হলে redirect</small>
+                </div>
+                <div class="form-group">
+                  <label>Fail URL</label>
+                  <input type="url" id="aamarpayFailUrl" placeholder="https://yoursite.com/payment-fail">
+                  <small>Payment ব্যর্থ হলে redirect</small>
+                </div>
+              </div>
+              <div class="form-row single">
+                <div class="form-group">
+                  <label>Cancel URL</label>
+                  <input type="url" id="aamarpayCancelUrl" placeholder="https://yoursite.com/payment-cancel">
+                  <small>Customer cancel করলে redirect</small>
+                </div>
+              </div>
+
+              <!-- Info Box -->
+              <div style="background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px; padding:14px; margin-top:16px; font-size:13px; color:#92400e;">
+                <strong style="display:block; margin-bottom:6px;">
+                  <i class="fa-solid fa-lightbulb"></i> কীভাবে কাজ করে?
+                </strong>
+                <ol style="margin:8px 0 0 20px; padding:0; line-height:1.8;">
+                  <li>Customer checkout-এ <strong>aamarPay</strong> select করবে</li>
+                  <li>Frontend আপনার <strong>Supabase Edge Function</strong>-এ request পাঠাবে</li>
+                  <li>Edge Function aamarPay-এ payment initiate করবে</li>
+                  <li>Customer payment page-এ redirect হবে</li>
+                  <li>Payment সফল হলে <strong>IPN webhook</strong> দিয়ে order paid হবে</li>
+                </ol>
+              </div>
+
+              <!-- Actions -->
+              <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="testAamarpayConnection()">
+                  <i class="fa-solid fa-plug"></i> Connection Test
+                </button>
+                <a href="https://sandbox.aamarpay.com" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+                  <i class="fa-solid fa-external-link"></i> aamarPay Sandbox
+                </a>
+                <a href="https://aamarpay.com" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+                  <i class="fa-solid fa-globe"></i> aamarPay Website
+                </a>
+              </div>
+
+              <!-- Edge Function Status -->
+              <div id="aamarpayFunctionStatus" style="margin-top:14px;"></div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           TAX (unchanged)
+           ============================================ -->
+      <div class="settings-panel" id="panel-tax">
+        <div class="card">
+          <div class="card-head"><h2>💰 ট্যাক্স / VAT</h2></div>
+          <div class="card-body">
+            <div class="toggle-row" id="taxToggleRow">
+              <div class="toggle-info">
+                <strong>ট্যাক্স চালু আছে?</strong>
+                <small>চেকআউটে VAT সেকশন দেখাবে এবং order total-এ যুক্ত হবে</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="taxEnabled" onchange="toggleTaxSection()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div id="taxConfigArea">
+              <div class="form-group" style="margin-bottom:12px;">
+                <label>ট্যাক্স তালিকা</label>
+                <div id="taxList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="addTaxRow()" style="margin-top:8px;">
+                  <i class="fa-solid fa-plus"></i> নতুন ট্যাক্স
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           ADMINS (unchanged)
+           ============================================ -->
+      <div class="settings-panel" id="panel-admins">
+        <div class="card">
+          <div class="card-head"><h2>👤 বর্তমান অ্যাডমিন</h2></div>
+          <div class="card-body">
+            <div id="currentAdminInfo"></div>
+            <hr style="margin:20px 0;border:none;border-top:1px solid var(--gray-200)">
+            <button class="btn btn-danger" onclick="confirmAdminLogout()" style="width:100%;justify-content:center;padding:12px;">
+              <i class="fa-solid fa-power-off"></i> অ্যাডমিন প্যানেল থেকে লগআউট করুন
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           MAINTENANCE (unchanged)
+           ============================================ -->
+      <div class="settings-panel" id="panel-maintenance">
+        <div class="card">
+          <div class="card-head"><h2>🔧 সিস্টেম</h2></div>
+          <div class="card-body">
+            <label style="display:flex;gap:10px;align-items:center;padding:14px;background:var(--gray-50);border-radius:10px;cursor:pointer;margin-bottom:14px">
+              <input type="checkbox" id="maintenanceMode" style="width:auto;accent-color:var(--orange-500)">
+              <div>
+                <strong>🔒 মেইনটেন্যান্স মোড</strong>
+                <small style="display:block;color:var(--gray-500)">সাইট বন্ধ থাকবে, শুধু অ্যাডমিন ঢুকতে পারবে</small>
+              </div>
+            </label>
+
+            <div class="form-group" style="margin-bottom:20px">
+              <label>মেইনটেন্যান্স মেসেজ</label>
+              <textarea id="maintenanceMsg" rows="3"></textarea>
+            </div>
+
+            <hr style="border:none;border-top:1px solid var(--gray-200);margin:20px 0">
+
+            <h3 style="font-size:16px;margin-bottom:14px;color:var(--red-500)">⚠️ বিপজ্জনক অ্যাকশন</h3>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-outline" onclick="exportAllData()">
+                <i class="fa-solid fa-download"></i> সব ডেটা এক্সপোর্ট (JSON)
+              </button>
+              <button class="btn btn-outline" onclick="importData()">
+                <i class="fa-solid fa-upload"></i> ব্যাকআপ থেকে ইমপোর্ট
+              </button>
+              <button class="btn btn-danger" onclick="resetAllData()">
+                <i class="fa-solid fa-trash"></i> সব অ্যাডমিন ডেটা রিসেট
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const ALL_ADMIN_KEYS = [
+    'products', 'orders', 'customers', 'coupons', 'reviews',
+    'categories', 'districts', 'farmers', 'settings',
+    'delivery_partners', 'delivery_men', 'delivery_zones',
+    'support_tickets', 'staff_users', 'banners', 'offers',
+    'referrals', 'subscriptions', 'stock_alerts', 'abandoned_carts',
+    'activity_log', 'message_templates', 'notification_history',
+    'product_tags', 'product_tag_map', 'product_qa',
+    'gift_vouchers', 'free_gifts', 'farmer_payouts', 'cod_limits',
+    'loyalty_points', 'returns', 'roles', 'videos', 'blogs',
+    'languages', 'seo_settings', 'theme_settings', 'inventory_log',
+    'callback_requests', 'featured_products', 'blocked_customers',
+    'farmer_profiles', 'taxes', 'tax_enabled'
+  ];
+
+  // ============================================
+  // Load settings
+  // ============================================
+  function loadSettings() {
+    const s = getAdminSettings();
+
+    // General
+    document.getElementById('siteName').value = s.siteName || '';
+    document.getElementById('siteTagline').value = s.siteTagline || '';
+    document.getElementById('siteLogo').value = s.siteLogo || '';
+    document.getElementById('sitePhone').value = s.sitePhone || '';
+    document.getElementById('siteEmail').value = s.siteEmail || '';
+    document.getElementById('siteAddress').value = s.siteAddress || '';
+
+    // Social
+    document.getElementById('socialFacebook').value = s.socialFacebook || '';
+    document.getElementById('socialInstagram').value = s.socialInstagram || '';
+    document.getElementById('socialWhatsapp').value = s.socialWhatsapp || '';
+    document.getElementById('socialYoutube').value = s.socialYoutube || '';
+
+    // Delivery
+    document.getElementById('freeDelivery').value = s.freeDelivery || 500;
+    document.getElementById('deliveryCharge').value = s.deliveryCharge || 40;
+    document.getElementById('deliveryAreas').value = s.deliveryAreas || '';
+    document.getElementById('deliverySlots').value = s.deliverySlots || '';
+    document.getElementById('showDeliverySlot').checked = s.showDeliverySlot !== false;
+    document.getElementById('showDeliveryPartner').checked = s.showDeliveryPartner !== false;
+
+    // Payment (manual)
+    document.getElementById('payCod').checked = s.payCod !== false;
+    document.getElementById('payBkash').checked = s.payBkash !== false;
+    document.getElementById('payNagad').checked = s.payNagad !== false;
+    document.getElementById('payCard').checked = !!s.payCard;
+    document.getElementById('bkashNumber').value = s.bkashNumber || '';
+    document.getElementById('nagadNumber').value = s.nagadNumber || '';
+
+    // ✅ aamarPay
+    document.getElementById('aamarpayEnabled').checked = !!s.aamarpayEnabled;
+    document.getElementById('aamarpayMode').value = s.aamarpayMode || 'sandbox';
+    document.getElementById('aamarpayStoreId').value = s.aamarpayStoreId || '';
+    document.getElementById('aamarpaySignatureKey').value = s.aamarpaySignatureKey || '';
+    
+    // URLs — auto-fill current origin
+    const currentOrigin = location.origin;
+    const basePath = location.pathname.replace(/\/[^/]+$/, '');
+    document.getElementById('aamarpaySuccessUrl').value = s.aamarpaySuccessUrl || `${currentOrigin}${basePath}/payment-success.html`;
+    document.getElementById('aamarpayFailUrl').value = s.aamarpayFailUrl || `${currentOrigin}${basePath}/payment-fail.html`;
+    document.getElementById('aamarpayCancelUrl').value = s.aamarpayCancelUrl || `${currentOrigin}${basePath}/payment-cancel.html`;
+
+    // Tax
+    document.getElementById('taxEnabled').checked = s.taxEnabled !== false;
+    renderTaxList(s.taxes || []);
+
+    // Maintenance
+    document.getElementById('maintenanceMode').checked = !!s.maintenanceMode;
+    document.getElementById('maintenanceMsg').value = s.maintenanceMsg || '';
+
+    // Toggle UI states
+    toggleSlotSection();
+    togglePartnerSection();
+    toggleTaxSection();
+    toggleAamarpaySection();
+    togglePaymentField('bkash');
+    togglePaymentField('nagad');
+    onAamarpayModeChange();
+
+    // Current admin
+    renderCurrentAdmin();
+  }
+
+  // ============================================
+  // Current admin info
+  // ============================================
+  function renderCurrentAdmin() {
+    const admin = getAdmin();
+    const container = document.getElementById('currentAdminInfo');
+    if (!container) return;
+    if (!admin) {
+      container.innerHTML = '<p style="color:var(--gray-500)">লগইন নেই</p>';
+      return;
+    }
+    const roleLabels = {
+      admin: '👑 Admin', manager: '💼 Manager',
+      editor: '📝 Editor', staff: '👨‍💼 Staff'
+    };
+    container.innerHTML = `
+      <div class="admin-user-row">
+        <div>
+          <strong>${admin.name || 'Admin'}</strong><br>
+          <small>${admin.email}</small>
+        </div>
+        <span class="badge badge-active">${roleLabels[admin.role] || admin.role}</span>
+      </div>
+      <div class="admin-user-row">
+        <div>
+          <small>লগইন সময়</small><br>
+          <strong style="font-size:13px;">${admin.loginAt ? new Date(admin.loginAt).toLocaleString('bn-BD') : '—'}</strong>
+        </div>
+        <span class="badge badge-active">সক্রিয়</span>
+      </div>
+    `;
+  }
+
+  // ============================================
+  // Tax list
+  // ============================================
+  let taxRows = [];
+
+  function renderTaxList(taxes) {
+    taxRows = JSON.parse(JSON.stringify(taxes || []));
+    const container = document.getElementById('taxList');
+    if (!container) return;
+    if (!taxRows.length) {
+      container.innerHTML = '<p style="color:var(--gray-500);font-size:13px;padding:10px;background:var(--gray-50);border-radius:6px;">কোনো ট্যাক্স নেই</p>';
+      return;
+    }
+    container.innerHTML = taxRows.map((t, i) => `
+      <div style="display:flex;gap:8px;align-items:center;padding:10px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200);">
+        <input type="text" value="${t.name || ''}" placeholder="নাম"
+          onchange="updateTax(${i}, 'name', this.value)"
+          style="flex:2;padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:13px;background:#fff;">
+        <input type="number" value="${t.rate || 0}" placeholder="হার" min="0" step="0.01"
+          onchange="updateTax(${i}, 'rate', +this.value)"
+          style="flex:1;padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:13px;background:#fff;">
+        <select onchange="updateTax(${i}, 'type', this.value)"
+          style="flex:1;padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:13px;background:#fff;">
+          <option value="percent" ${t.type === 'percent' ? 'selected' : ''}>%</option>
+          <option value="flat" ${t.type === 'flat' ? 'selected' : ''}>৳</option>
+        </select>
+        <label style="display:flex;gap:4px;align-items:center;font-size:12px;white-space:nowrap;">
+          <input type="checkbox" ${t.active ? 'checked' : ''}
+            onchange="updateTax(${i}, 'active', this.checked)"
+            style="accent-color:var(--green-600);">
+          সক্রিয়
+        </label>
+        <button type="button" onclick="removeTaxRow(${i})"
+          style="width:30px;height:30px;border-radius:6px;background:#fee2e2;color:#991b1b;display:flex;align-items:center;justify-content:center;">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  window.updateTax = (idx, field, value) => {
+    if (taxRows[idx]) taxRows[idx][field] = value;
+  };
+  window.addTaxRow = () => {
+    taxRows.push({ id: Date.now(), name: '', rate: 0, type: 'percent', active: true });
+    renderTaxList(taxRows);
+  };
+  window.removeTaxRow = (idx) => {
+    if (!confirm('এই ট্যাক্স ডিলিট করবেন?')) return;
+    taxRows.splice(idx, 1);
+    renderTaxList(taxRows);
+  };
+
+  // ============================================
+  // ✅ aamarPay specific helpers
+  // ============================================
+  window.toggleAamarpaySection = () => {
+    const cb = document.getElementById('aamarpayEnabled');
+    const config = document.getElementById('aamarpayConfig');
+    if (!cb || !config) return;
+    config.style.display = cb.checked ? 'block' : 'none';
+  };
+
+  window.onAamarpayModeChange = () => {
+    const mode = document.getElementById('aamarpayMode')?.value || 'sandbox';
+    const badge = document.getElementById('aamarpayModeBadge');
+    const sandboxInfo = document.getElementById('aamarpaySandboxInfo');
+    const liveInfo = document.getElementById('aamarpayLiveInfo');
+
+    if (mode === 'live') {
+      if (badge) {
+        badge.textContent = 'Live';
+        badge.className = 'badge badge-cancelled';
+      }
+      if (sandboxInfo) sandboxInfo.style.display = 'none';
+      if (liveInfo) liveInfo.style.display = 'block';
+    } else {
+      if (badge) {
+        badge.textContent = 'Sandbox';
+        badge.className = 'badge badge-active';
+      }
+      if (sandboxInfo) sandboxInfo.style.display = 'block';
+      if (liveInfo) liveInfo.style.display = 'none';
+    }
+  };
+
+  window.testAamarpayConnection = async () => {
+    const statusDiv = document.getElementById('aamarpayFunctionStatus');
+    if (!statusDiv) return;
+
+    statusDiv.innerHTML = `
+      <div style="background:#eff6ff; padding:10px 14px; border-radius:8px; border-left:3px solid #3b82f6; font-size:13px; color:#1e40af;">
+        <i class="fa-solid fa-spinner fa-spin"></i> Testing connection...
+      </div>
+    `;
+
+    try {
+      // Test Edge Function (aamarpay-init)
+      const projectUrl = window.SUPABASE_URL;
+      if (!projectUrl || projectUrl.includes('YOUR_PROJECT')) {
+        throw new Error('Supabase URL not configured');
+      }
+
+      const response = await fetch(`${projectUrl}/functions/v1/aamarpay-init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: 'TEST_' + Date.now(),
+          amount: 10,
+          customerName: 'Test User',
+          customerEmail: 'test@example.com',
+          customerPhone: '01700000000'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      statusDiv.innerHTML = `
+        <div style="background:#f0fdf4; padding:12px 14px; border-radius:8px; border-left:3px solid #16a34a; font-size:13px; color:#15803d;">
+          <i class="fa-solid fa-circle-check"></i>
+          <strong>Connection OK!</strong> Edge Function respond করছে।<br>
+          <small style="color:#4b5563;">Response: ${JSON.stringify(data).substring(0, 100)}</small>
+        </div>
+      `;
+    } catch (err) {
+      statusDiv.innerHTML = `
+        <div style="background:#fef2f2; padding:12px 14px; border-radius:8px; border-left:3px solid #ef4444; font-size:13px; color:#991b1b;">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <strong>Connection Failed!</strong><br>
+          <small>${err.message}</small><br>
+          <small style="display:block; margin-top:6px;">
+            ⚠️ <strong>সমাধান:</strong> Supabase-এ <code>aamarpay-init</code> Edge Function deploy করুন।
+          </small>
+        </div>
+      `;
+    }
+  };
+
+  // ============================================
+  // Toggle helpers
+  // ============================================
+  window.toggleSlotSection = () => {
+    const cb = document.getElementById('showDeliverySlot');
+    const area = document.getElementById('slotTextArea');
+    const row = document.getElementById('slotToggleRow');
+    if (!cb || !area) return;
+    area.style.display = cb.checked ? 'block' : 'none';
+    row?.classList.toggle('disabled', !cb.checked);
+  };
+
+  window.togglePartnerSection = () => {
+    const cb = document.getElementById('showDeliveryPartner');
+    const row = document.getElementById('partnerToggleRow');
+    if (!cb || !row) return;
+    row.classList.toggle('disabled', !cb.checked);
+  };
+
+  window.toggleTaxSection = () => {
+    const cb = document.getElementById('taxEnabled');
+    const area = document.getElementById('taxConfigArea');
+    const row = document.getElementById('taxToggleRow');
+    if (!cb || !area) return;
+    area.style.display = cb.checked ? 'block' : 'none';
+    row?.classList.toggle('disabled', !cb.checked);
+  };
+
+  window.togglePaymentField = (type) => {
+    const cb = document.getElementById(type === 'bkash' ? 'payBkash' : 'payNagad');
+    const field = document.getElementById(type + 'Number');
+    if (!cb || !field) return;
+    field.classList.toggle('hidden', !cb.checked);
+  };
+
+  // ============================================
+  // Save all settings
+  // ============================================
+  window.saveAllSettings = () => {
+    const patch = {
+      // General
+      siteName: document.getElementById('siteName').value.trim(),
+      siteTagline: document.getElementById('siteTagline').value.trim(),
+      siteLogo: document.getElementById('siteLogo').value.trim(),
+      sitePhone: document.getElementById('sitePhone').value.trim(),
+      siteEmail: document.getElementById('siteEmail').value.trim(),
+      siteAddress: document.getElementById('siteAddress').value.trim(),
+
+      // Social
+      socialFacebook: document.getElementById('socialFacebook').value.trim(),
+      socialInstagram: document.getElementById('socialInstagram').value.trim(),
+      socialWhatsapp: document.getElementById('socialWhatsapp').value.trim(),
+      socialYoutube: document.getElementById('socialYoutube').value.trim(),
+
+      // Delivery
+      freeDelivery: +document.getElementById('freeDelivery').value || 0,
+      deliveryCharge: +document.getElementById('deliveryCharge').value || 0,
+      deliveryAreas: document.getElementById('deliveryAreas').value,
+      deliverySlots: document.getElementById('deliverySlots').value,
+      showDeliverySlot: document.getElementById('showDeliverySlot').checked,
+      showDeliveryPartner: document.getElementById('showDeliveryPartner').checked,
+
+      // Payment (manual)
+      payCod: document.getElementById('payCod').checked,
+      payBkash: document.getElementById('payBkash').checked,
+      payNagad: document.getElementById('payNagad').checked,
+      payCard: document.getElementById('payCard').checked,
+      bkashNumber: document.getElementById('bkashNumber').value.trim(),
+      nagadNumber: document.getElementById('nagadNumber').value.trim(),
+
+      // ✅ aamarPay
+      aamarpayEnabled: document.getElementById('aamarpayEnabled').checked,
+      aamarpayMode: document.getElementById('aamarpayMode').value,
+      aamarpayStoreId: document.getElementById('aamarpayStoreId').value.trim(),
+      aamarpaySignatureKey: document.getElementById('aamarpaySignatureKey').value.trim(),
+      aamarpaySuccessUrl: document.getElementById('aamarpaySuccessUrl').value.trim(),
+      aamarpayFailUrl: document.getElementById('aamarpayFailUrl').value.trim(),
+      aamarpayCancelUrl: document.getElementById('aamarpayCancelUrl').value.trim(),
+
+      // Tax
+      taxEnabled: document.getElementById('taxEnabled').checked,
+      taxes: taxRows,
+
+      // Maintenance
+      maintenanceMode: document.getElementById('maintenanceMode').checked,
+      maintenanceMsg: document.getElementById('maintenanceMsg').value.trim()
+    };
+
+    saveAdminSettings(patch);
+    showToast('সব সেটিংস সেভ হয়েছে ✅', 'success');
+  };
+
+  // ============================================
+  // Export/Import
+  // ============================================
+  window.exportAllData = () => {
+    const data = {};
+    ALL_ADMIN_KEYS.forEach(k => {
+      const val = AdminStore.get(k, null);
+      if (val !== null) data[k] = val;
+    });
+    data['__admin_user'] = getAdmin();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kachabazar-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('ডেটা এক্সপোর্ট ✅', 'success');
+  };
+
+  window.importData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!confirm('এই ব্যাকআপ থেকে ডেটা ইমপোর্ট করবেন? বর্তমান ডেটা overwrite হবে।')) return;
+          Object.entries(data).forEach(([k, v]) => {
+            if (k === '__admin_user') return;
+            AdminStore.set(k, v);
+          });
+          showToast('ডেটা ইমপোর্ট ✅', 'success');
+          setTimeout(() => location.reload(), 800);
+        } catch (err) {
+          showToast('ইমপোর্ট ব্যর্থ: ' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  window.resetAllData = () => {
+    if (!confirm('সব অ্যাডমিন ডেটা মুছে যাবে! নিশ্চিত?')) return;
+    if (!confirm('আবারও নিশ্চিত করুন — এটা ফিরিয়ে আনা যাবে না!')) return;
+    ALL_ADMIN_KEYS.forEach(k => AdminStore.remove(k));
+    showToast('সব ডেটা রিসেট হয়েছে', 'success');
+    setTimeout(() => location.reload(), 900);
+  };
+
+  // ============================================
+  // Tabs
+  // ============================================
+  document.querySelectorAll('.settings-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.settings-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      ['general', 'delivery', 'payment', 'tax', 'admins', 'maintenance'].forEach(t => {
+        document.getElementById('panel-' + t)?.classList.toggle('active', t === tab);
+      });
+    });
+  });
+
+  // Init
+  document.addEventListener('DOMContentLoaded', loadSettings);
+</script>
+</body>
+</html>

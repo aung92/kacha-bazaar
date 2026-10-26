@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>মাল্টি-ল্যাঙ্গুয়েজ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="মাল্টি-ল্যাঙ্গুয়েজ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🌏 মাল্টি-ল্যাঙ্গুয়েজ</h1>
+        <button class="btn btn-primary" onclick="saveAll()"><i class="fa-solid fa-save"></i> সেভ</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>ভাষা নির্বাচন</h2></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group"><label>ডিফল্ট ভাষা</label>
+              <select id="defaultLang"><option value="bn">বাংলা</option><option value="en">English</option></select>
+            </div>
+            <div class="form-group"><label>ইংরেজি চালু আছে?</label>
+              <select id="enableEn"><option value="true">হ্যাঁ</option><option value="false">না</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>সাইট টেক্সট অনুবাদ</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Key</th><th>বাংলা</th><th>English</th></tr></thead>
+              <tbody id="langBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_LANG = {
+    defaultLang: 'bn',
+    enableEn: true,
+    texts: [
+      { key: 'site_name', bn: 'কাচাবাজার', en: 'KachaBazar' },
+      { key: 'hero_title', bn: 'পাহাড়ের তাজা সবজি', en: 'Fresh Vegetables from Hills' },
+      { key: 'btn_shop', bn: 'এখনই কিনুন', en: 'Shop Now' },
+      { key: 'btn_add_cart', bn: 'কার্টে যোগ করুন', en: 'Add to Cart' },
+      { key: 'cart_title', bn: 'আমার কার্ট', en: 'My Cart' },
+      { key: 'checkout', bn: 'চেকআউট', en: 'Checkout' },
+      { key: 'order_confirm', bn: 'অর্ডার কনফার্ম করুন', en: 'Confirm Order' }
+    ]
+  };
+
+  function getLang() { return { ...DEFAULT_LANG, ...AdminStore.get('language_settings', {}) }; }
+  function saveLang(d) { AdminStore.set('language_settings', d); }
+
+  function render() {
+    const d = getLang();
+    document.getElementById('defaultLang').value = d.defaultLang;
+    document.getElementById('enableEn').value = d.enableEn ? 'true' : 'false';
+
+    document.getElementById('langBody').innerHTML = d.texts.map((t, i) => `
+      <tr>
+        <td><code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; font-size:12px;">${t.key}</code></td>
+        <td><input type="text" value="${t.bn}" data-idx="${i}" data-lang="bn" style="width:100%; padding:6px 10px; border:1px solid var(--gray-200); border-radius:6px; font-family:inherit; font-size:13px;"></td>
+        <td><input type="text" value="${t.en}" data-idx="${i}" data-lang="en" style="width:100%; padding:6px 10px; border:1px solid var(--gray-200); border-radius:6px; font-family:inherit; font-size:13px;"></td>
+      </tr>
+    `).join('');
+  }
+
+  function saveAll() {
+    const d = getLang();
+    d.defaultLang = document.getElementById('defaultLang').value;
+    d.enableEn = document.getElementById('enableEn').value === 'true';
+    document.querySelectorAll('#langBody input').forEach(inp => {
+      const idx = +inp.dataset.idx;
+      const lang = inp.dataset.lang;
+      d.texts[idx][lang] = inp.value;
+    });
+    saveLang(d);
+    showToast('সেভ ✅', 'success');
+  }
+
+  document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>

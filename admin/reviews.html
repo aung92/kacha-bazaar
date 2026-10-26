@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>রিভিউ — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .review-stars { color: var(--yellow-400); font-size: 14px; }
+    .review-card {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .review-card:last-child { border-bottom: none; }
+    .review-avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--green-100);
+      color: var(--green-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .review-content { flex: 1; min-width: 0; }
+    .review-content h4 { font-size: 14px; margin-bottom: 4px; }
+    .review-content .product {
+      font-size: 12px;
+      color: var(--green-700);
+      background: var(--green-50);
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .review-content p {
+      font-size: 14px;
+      color: var(--gray-700);
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    .review-content .meta {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .review-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .review-actions button {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body data-title="রিভিউ">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>⭐ রিভিউ মডারেশন</h1>
+      </div>
+
+      <!-- Tabs -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px">
+          <button class="btn btn-sm btn-primary review-tab active" data-status="all">সব (<span id="cAll">0</span>)</button>
+          <button class="btn btn-sm btn-outline review-tab" data-status="pending">অপেক্ষমাণ (<span id="cPending">0</span>)</button>
+          <button class="btn btn-sm btn-outline review-tab" data-status="approved">অনুমোদিত (<span id="cApproved">0</span>)</button>
+          <button class="btn btn-sm btn-outline review-tab" data-status="rejected">প্রত্যাখ্যাত (<span id="cRejected">0</span>)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="reviewsList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_REVIEWS = [
+    { id: 1, customer: 'রফিক আহমেদ', product: 'পাহাড়ি মধু', rating: 5, comment: 'অসাধারণ মধু! একদম খাঁটি। পরিবারের সবাই খুশি।', date: '2025-01-20', status: 'approved' },
+    { id: 2, customer: 'সাদিয়া ইসলাম', product: 'পাহাড়ি কমলা', rating: 5, comment: 'কমলা খুব মিষ্টি এবং তাজা ছিল। আবার অর্ডার করব।', date: '2025-01-19', status: 'pending' },
+    { id: 3, customer: 'করিম শেখ', product: 'দেশি টমেটো', rating: 4, comment: 'ভালো টমেটো, তবে প্যাকেজিং আরেকটু ভালো হলে ভালো হতো।', date: '2025-01-18', status: 'pending' },
+    { id: 4, customer: 'নাসরিন আক্তার', product: 'পাহাড়ি গোলমরিচ', rating: 5, comment: 'গোলমরিচের ঘ্রাণই বলে দেয় কতটা ফ্রেশ। দামও যুক্তিসঙ্গত।', date: '2025-01-17', status: 'approved' },
+    { id: 5, customer: 'জাহিদ হাসান', product: 'কাপ্তাই রুই মাছ', rating: 3, comment: 'মাছ ঠিকঠাক ছিল কিন্তু ডেলিভারি একটু দেরি হয়।', date: '2025-01-16', status: 'rejected' }
+  ];
+
+  let activeStatus = 'all';
+
+  function getReviews() {
+    return AdminStore.get('reviews', DEFAULT_REVIEWS);
+  }
+  function saveReviews(list) {
+    AdminStore.set('reviews', list);
+  }
+
+  function updateCounts() {
+    const reviews = getReviews();
+    const counts = {
+      all: reviews.length,
+      pending: reviews.filter(r => r.status === 'pending').length,
+      approved: reviews.filter(r => r.status === 'approved').length,
+      rejected: reviews.filter(r => r.status === 'rejected').length
+    };
+    document.getElementById('cAll').textContent = counts.all;
+    document.getElementById('cPending').textContent = counts.pending;
+    document.getElementById('cApproved').textContent = counts.approved;
+    document.getElementById('cRejected').textContent = counts.rejected;
+  }
+
+  function render() {
+    const list = getReviews().filter(r => activeStatus === 'all' || r.status === activeStatus);
+
+    if (!list.length) {
+      document.getElementById('reviewsList').innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-star"></i>
+          <p>কোনো রিভিউ নেই</p>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('reviewsList').innerHTML = list.map(r => `
+      <div class="review-card">
+        <div class="review-avatar">${r.customer[0]}</div>
+        <div class="review-content">
+          <h4>
+            ${r.customer}
+            <span class="product">${r.product}</span>
+          </h4>
+          <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+          <p>"${r.comment}"</p>
+          <div class="meta">${formatDate(r.date)} · ${r.status === 'pending' ? '⏳ অপেক্ষমাণ' : r.status === 'approved' ? '✅ অনুমোদিত' : '❌ প্রত্যাখ্যাত'}</div>
+        </div>
+        <div class="review-actions">
+          ${r.status !== 'approved' ? `<button class="btn btn-primary" onclick="setStatus(${r.id}, 'approved')">অনুমোদন</button>` : ''}
+          ${r.status !== 'rejected' ? `<button class="btn btn-outline" onclick="setStatus(${r.id}, 'rejected')">প্রত্যাখ্যান</button>` : ''}
+          <button class="btn btn-danger" onclick="deleteReview(${r.id})">ডিলিট</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setStatus(id, status) {
+    const reviews = getReviews();
+    const idx = reviews.findIndex(r => r.id === id);
+    if (idx < 0) return;
+    reviews[idx].status = status;
+    saveReviews(reviews);
+    showToast(`রিভিউ ${status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'} ✅`, 'success');
+    updateCounts();
+    render();
+  }
+
+  function deleteReview(id) {
+    if (!confirm('রিভিউ ডিলিট করবেন?')) return;
+    saveReviews(getReviews().filter(r => r.id !== id));
+    showToast('ডিলিট ✅', 'success');
+    updateCounts();
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.review-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.review-tab').forEach(t => {
+          t.classList.remove('btn-primary');
+          t.classList.add('btn-outline');
+        });
+        tab.classList.remove('btn-outline');
+        tab.classList.add('btn-primary');
+        activeStatus = tab.dataset.status;
+        render();
+      });
+    });
+    updateCounts();
+    render();
+  });
+</script>
+</body>
+</html>

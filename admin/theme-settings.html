@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>থিম সেটিংস — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="থিম সেটিংস">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🎨 থিম / ডিজাইন সেটিংস</h1>
+        <button class="btn btn-primary" onclick="saveTheme()"><i class="fa-solid fa-save"></i> সেভ</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>রং</h2></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>প্রাইমারি কালার</label>
+              <div style="display:flex; gap:8px;">
+                <input type="color" id="primaryColor" value="#16a34a" style="width:60px; height:42px; border-radius:8px; border:1px solid var(--gray-200); cursor:pointer;">
+                <input type="text" id="primaryColorHex" value="#16a34a" style="flex:1; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:monospace; font-size:13px;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>সেকেন্ডারি কালার</label>
+              <div style="display:flex; gap:8px;">
+                <input type="color" id="secondaryColor" value="#ea580c" style="width:60px; height:42px; border-radius:8px; border:1px solid var(--gray-200); cursor:pointer;">
+                <input type="text" id="secondaryColorHex" value="#ea580c" style="flex:1; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:monospace; font-size:13px;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>ফন্ট</h2></div>
+        <div class="card-body">
+          <div class="form-row single">
+            <div class="form-group">
+              <label>ফন্ট ফ্যামিলি</label>
+              <select id="fontFamily" style="width:100%; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:14px;">
+                <option value="Hind Siliguri">Hind Siliguri (ডিফল্ট)</option>
+                <option value="Noto Sans Bengali">Noto Sans Bengali</option>
+                <option value="SolaimanLipi">SolaimanLipi</option>
+                <option value="Kalpurush">Kalpurush</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>প্রিভিউ</h2></div>
+        <div class="card-body" id="previewBox">
+          <div style="padding:20px; background:var(--gray-50); border-radius:10px; text-align:center;">
+            <button class="btn" style="background:var(--green-600); color:#fff; padding:10px 24px; border-radius:8px; font-weight:600; margin-bottom:10px;">প্রাইমারি বাটন</button>
+            <button class="btn" style="background:var(--orange-500); color:#fff; padding:10px 24px; border-radius:8px; font-weight:600; margin-left:8px;">সেকেন্ডারি বাটন</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_THEME = { primary: '#16a34a', secondary: '#ea580c', font: 'Hind Siliguri' };
+
+  function getTheme() { return { ...DEFAULT_THEME, ...AdminStore.get('theme_settings', {}) }; }
+  function saveThemeData(d) { AdminStore.set('theme_settings', d); }
+
+  function load() {
+    const t = getTheme();
+    document.getElementById('primaryColor').value = t.primary;
+    document.getElementById('primaryColorHex').value = t.primary;
+    document.getElementById('secondaryColor').value = t.secondary;
+    document.getElementById('secondaryColorHex').value = t.secondary;
+    document.getElementById('fontFamily').value = t.font;
+    applyPreview(t);
+  }
+
+  function applyPreview(t) {
+    document.getElementById('previewBox').querySelectorAll('button').forEach((b, i) => {
+      b.style.background = i === 0 ? t.primary : t.secondary;
+    });
+    document.getElementById('previewBox').style.fontFamily = t.font;
+  }
+
+  function saveTheme() {
+    const d = {
+      primary: document.getElementById('primaryColorHex').value,
+      secondary: document.getElementById('secondaryColorHex').value,
+      font: document.getElementById('fontFamily').value
+    };
+    saveThemeData(d);
+    showToast('থিম সেভ ✅', 'success');
+    applyPreview(d);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    load();
+    ['primaryColor','secondaryColor'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function() {
+        document.getElementById(id + 'Hex').value = this.value;
+        applyPreview({ primary: document.getElementById('primaryColorHex').value, secondary: document.getElementById('secondaryColorHex').value, font: document.getElementById('fontFamily').value });
+      });
+    });
+  });
+</script>
+</body>
+</html>

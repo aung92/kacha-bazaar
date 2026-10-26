@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ব্যানার — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .banner-card { display: flex; gap: 16px; padding: 16px; border-bottom: 1px solid var(--gray-200); align-items: center; }
+    .banner-card:last-child { border-bottom: none; }
+    .banner-card img { width: 120px; height: 60px; border-radius: 8px; object-fit: cover; }
+    .banner-info { flex: 1; }
+    .banner-info h4 { font-size: 15px; margin-bottom: 4px; }
+    .banner-info p { font-size: 13px; color: var(--gray-500); }
+  </style>
+</head>
+<body data-title="ব্যানার">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🖼️ হোমপেজ ব্যানার</h1>
+        <button class="btn btn-primary" onclick="openBannerModal()">
+          <i class="fa-solid fa-plus"></i> নতুন ব্যানার
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-body no-pad" id="bannerList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bannerModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ব্যানার</h3>
+      <button class="close-modal" onclick="closeModal('bannerModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bannerId">
+      <div class="form-row single">
+        <div class="form-group"><label>শিরোনাম *</label><input type="text" id="bannerTitle" placeholder="যেমন: শীতে পাহাড়ি মধুর অফার"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>ইমেজ URL *</label><input type="url" id="bannerImg" placeholder="https://..."></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>লিংক (ঐচ্ছিক)</label><input type="text" id="bannerLink" placeholder="shop.html?cat=honey"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="bannerActive" checked style="width:auto;accent-color:var(--green-600)">
+        <span>সক্রিয়</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('bannerModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveBanner()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_BANNERS = [
+    { id: 1, title: 'পাহাড়ি মধুর সিজন', img: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=800', link: 'shop.html?cat=honey', active: true }
+  ];
+
+  function getBanners() { return AdminStore.get('banners', DEFAULT_BANNERS); }
+  function saveBanners(list) { AdminStore.set('banners', list); }
+
+  function render() {
+    document.getElementById('bannerList').innerHTML = getBanners().map(b => `
+      <div class="banner-card">
+        <img src="${b.img}" alt="${b.title}">
+        <div class="banner-info">
+          <h4>${b.title}</h4>
+          <p>লিংক: ${b.link || 'নেই'} | <span class="badge ${b.active ? 'badge-active' : 'badge-inactive'}">${b.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span></p>
+        </div>
+        <div class="actions">
+          <button onclick="editBanner(${b.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteBanner(${b.id})"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openBannerModal() {
+    document.getElementById('bannerId').value = '';
+    document.getElementById('bannerTitle').value = '';
+    document.getElementById('bannerImg').value = '';
+    document.getElementById('bannerLink').value = '';
+    document.getElementById('bannerActive').checked = true;
+    document.getElementById('modalTitle').textContent = 'নতুন ব্যানার';
+    document.getElementById('bannerModal').classList.add('show');
+  }
+
+  function editBanner(id) {
+    const b = getBanners().find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('bannerId').value = b.id;
+    document.getElementById('bannerTitle').value = b.title;
+    document.getElementById('bannerImg').value = b.img;
+    document.getElementById('bannerLink').value = b.link || '';
+    document.getElementById('bannerActive').checked = b.active;
+    document.getElementById('modalTitle').textContent = 'এডিট ব্যানার';
+    document.getElementById('bannerModal').classList.add('show');
+  }
+
+  function saveBanner() {
+    const id = document.getElementById('bannerId').value;
+    const title = document.getElementById('bannerTitle').value.trim();
+    const img = document.getElementById('bannerImg').value.trim();
+    const link = document.getElementById('bannerLink').value.trim();
+    const active = document.getElementById('bannerActive').checked;
+
+    if (!title || !img) { showToast('শিরোনাম ও ইমেজ দিন', 'error'); return; }
+
+    const list = getBanners();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], title, img, link, active };
+    } else {
+      list.push({ id: Date.now(), title, img, link, active });
+    }
+    saveBanners(list);
+    closeModal('bannerModal');
+    render();
+    showToast('সেভ হয়েছে ✅', 'success');
+  }
+
+  function deleteBanner(id) {
+    if (!confirm('ডিলিট করবেন?')) return;
+    saveBanners(getBanners().filter(x => x.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

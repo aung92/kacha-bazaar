@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>রিপোর্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .report-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      background: #fff;
+      padding: 10px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .report-tabs button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .report-tabs button.active {
+      background: var(--green-600);
+      color: #fff;
+    }
+    .report-tabs button:hover:not(.active) {
+      background: var(--gray-100);
+    }
+
+    /* Bar chart */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 220px;
+      padding: 10px 0;
+    }
+    .bar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar {
+      width: 100%;
+      background: linear-gradient(to top, var(--green-600), var(--green-500));
+      border-radius: 6px 6px 0 0;
+      min-height: 4px;
+      transition: all .3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .bar:hover {
+      background: linear-gradient(to top, var(--green-700), var(--green-600));
+    }
+    .bar-label {
+      font-size: 11px;
+      color: var(--gray-600);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .bar-value {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green-700);
+    }
+
+    /* Progress list */
+    .progress-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .progress-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .progress-head strong { color: var(--gray-900); }
+    .progress-head span { color: var(--gray-500); font-size: 13px; }
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--gray-100);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--green-600);
+      border-radius: 4px;
+      transition: width .5s;
+    }
+
+    /* Top products */
+    .top-product {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .top-product:last-child { border-bottom: none; }
+    .top-product img {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .top-product-info { flex: 1; }
+    .top-product-info strong { font-size: 14px; display: block; }
+    .top-product-info small { font-size: 12px; color: var(--gray-500); }
+    .top-product-amount {
+      font-weight: 700;
+      color: var(--green-700);
+      font-size: 14px;
+    }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+    .kpi-card h4 {
+      font-size: 12px;
+      color: var(--gray-500);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .kpi-card strong {
+      font-size: 22px;
+      color: var(--green-700);
+      display: block;
+    }
+    .kpi-card small {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    @media(max-width:768px){
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body data-title="রিপোর্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📊 রিপোর্ট ও বিশ্লেষণ</h1>
+        <button class="btn btn-outline" onclick="window.print()">
+          <i class="fa-solid fa-print"></i> প্রিন্ট
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="report-tabs">
+        <button class="active" data-tab="sales">বিক্রি</button>
+        <button data-tab="products">পণ্য</button>
+        <button data-tab="districts">জেলা</button>
+        <button data-tab="categories">ক্যাটাগরি</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <!-- SALES TAB -->
+      <div class="report-content" id="tab-sales">
+        <div class="card">
+          <div class="card-head"><h2>📈 দৈনিক বিক্রি (শেষ ৭ দিন)</h2></div>
+          <div class="card-body">
+            <div class="bar-chart" id="salesChart"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>💳 পেমেন্ট পদ্ধতি অনুযায়ী</h2></div>
+          <div class="card-body">
+            <div class="progress-list" id="paymentBreakdown"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>📦 অর্ডার স্ট্যাটাস</h2></div>
+          <div class="card-body">
+            <div class="progress-list" id="statusBreakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTS TAB -->
+      <div class="report-content" id="tab-products" style="display:none">
+        <div class="card">
+          <div class="card-head"><h2>🏆 সর্বাধিক বিক্রিত পণ্য</h2></div>
+          <div class="card-body" id="topProducts"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>⚠️ কম স্টকের পণ্য</h2></div>
+          <div class="card-body no-pad">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>পণ্য</th><th>স্টক</th><th>অ্যাকশন</th></tr></thead>
+                <tbody id="lowStockTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DISTRICTS TAB -->
+      <div class="report-content" id="tab-districts" style="display:none">
+        <div class="card">
+          <div class="card-head"><h2>🌄 জেলা অনুযায়ী বিক্রি</h2></div>
+          <div class="card-body">
+            <div class="progress-list" id="districtBreakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORIES TAB -->
+      <div class="report-content" id="tab-categories" style="display:none">
+        <div class="card">
+          <div class="card-head"><h2>🏷️ ক্যাটাগরি অনুযায়ী বিক্রি</h2></div>
+          <div class="card-body">
+            <div class="progress-list" id="categoryBreakdown"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  function getOrders() { return AdminStore.get('orders', DEMO_ORDERS); }
+  function getProducts() { return AdminStore.get('products', DEMO_PRODUCTS); }
+
+  const CAT_LABELS = {
+    veg: 'সবজি', fruit: 'ফলমূল', fish: 'মাছ', meat: 'মাংস',
+    dairy: 'দুধ ও ডিম', spice: 'মসলা', honey: 'মধু', rice: 'চাল ও ডাল', organic: 'অর্গানিক'
+  };
+  const DIST_LABELS = { rangamati: 'রাঙ্গামাটি', khagrachari: 'খাগড়াছড়ি', bandarban: 'বান্দরবান' };
+  const PAYMENT_LABELS = { cod: 'ক্যাশ অন ডেলিভারি', bkash: 'বিকাশ', nagad: 'নগদ', card: 'কার্ড' };
+  const STATUS_LABELS = { pending: 'অপেক্ষমাণ', confirmed: 'কনফার্ম', packed: 'প্যাকড', shipped: 'শিপড', delivered: 'ডেলিভার্ড', cancelled: 'বাতিল' };
+
+  // ---------- KPIs ----------
+  function renderKPIs() {
+    const orders = getOrders();
+    const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0);
+    const totalOrders = orders.length;
+    const avgOrder = totalOrders ? Math.round(totalRevenue / totalOrders) : 0;
+    const delivered = orders.filter(o => o.status === 'delivered').length;
+    const successRate = totalOrders ? Math.round((delivered / totalOrders) * 100) : 0;
+
+    document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi-card">
+        <h4>মোট বিক্রি</h4>
+        <strong>${formatTk(totalRevenue)}</strong>
+        <small>সব অর্ডার মিলিয়ে</small>
+      </div>
+      <div class="kpi-card">
+        <h4>মোট অর্ডার</h4>
+        <strong>${totalOrders}</strong>
+        <small>${delivered}টি ডেলিভার্ড</small>
+      </div>
+      <div class="kpi-card">
+        <h4>গড় অর্ডার মূল্য</h4>
+        <strong>${formatTk(avgOrder)}</strong>
+        <small>প্রতি অর্ডার</small>
+      </div>
+      <div class="kpi-card">
+        <h4>সফলতার হার</h4>
+        <strong>${successRate}%</strong>
+        <small>ডেলিভারি সম্পন্ন</small>
+      </div>
+    `;
+  }
+
+  // ---------- Sales chart (last 7 days) ----------
+  function renderSalesChart() {
+    const orders = getOrders();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+
+    const dayNames = ['রবি','সোম','মঙ্গল','বুধ','বৃহঃ','শুক্র','শনি'];
+    const values = days.map(d => {
+      const dateStr = d.toDateString();
+      return orders.filter(o => new Date(o.date).toDateString() === dateStr && o.status !== 'cancelled')
+        .reduce((s, o) => s + o.total, 0);
+    });
+
+    const maxVal = Math.max(...values, 100);
+
+    document.getElementById('salesChart').innerHTML = days.map((d, i) => {
+      const h = (values[i] / maxVal) * 100;
+      return `<div class="bar-item">
+        <div class="bar-value">${values[i] ? formatTk(values[i]) : ''}</div>
+        <div class="bar" style="height:${Math.max(h, 2)}%" title="${formatTk(values[i])}"></div>
+        <div class="bar-label">${dayNames[d.getDay()]}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- Payment breakdown ----------
+  function renderPaymentBreakdown() {
+    const orders = getOrders();
+    const total = orders.length || 1;
+    const groups = {};
+    orders.forEach(o => { groups[o.payment] = (groups[o.payment] || 0) + 1; });
+
+    document.getElementById('paymentBreakdown').innerHTML = Object.entries(groups).map(([k, v]) => {
+      const pct = Math.round((v / total) * 100);
+      return `<div class="progress-item">
+        <div class="progress-head">
+          <strong>${PAYMENT_LABELS[k] || k}</strong>
+          <span>${v}টি (${pct}%)</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- Status breakdown ----------
+  function renderStatusBreakdown() {
+    const orders = getOrders();
+    const total = orders.length || 1;
+    const groups = {};
+    orders.forEach(o => { groups[o.status] = (groups[o.status] || 0) + 1; });
+
+    const colors = {
+      pending: '#facc15', confirmed: '#3b82f6', packed: '#a855f7',
+      shipped: '#ff6b35', delivered: '#16a34a', cancelled: '#ef4444'
+    };
+
+    document.getElementById('statusBreakdown').innerHTML = Object.entries(groups).map(([k, v]) => {
+      const pct = Math.round((v / total) * 100);
+      return `<div class="progress-item">
+        <div class="progress-head">
+          <strong>${STATUS_LABELS[k] || k}</strong>
+          <span>${v}টি (${pct}%)</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${colors[k] || 'var(--green-600)'}"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- Top products ----------
+  function renderTopProducts() {
+    const orders = getOrders();
+    const products = getProducts();
+    const counts = {};
+
+    orders.forEach(o => {
+      (o.items_detail || []).forEach(it => {
+        counts[it.name] = counts[it.name] || { qty: 0, revenue: 0 };
+        counts[it.name].qty += it.qty;
+        counts[it.name].revenue += it.price * it.qty;
+      });
+    });
+
+    const sorted = Object.entries(counts)
+      .sort((a, b) => b[1].revenue - a[1].revenue)
+      .slice(0, 5);
+
+    if (!sorted.length) {
+      document.getElementById('topProducts').innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:20px">কোনো ডেটা নেই</p>';
+      return;
+    }
+
+    document.getElementById('topProducts').innerHTML = sorted.map(([name, stat]) => {
+      const p = products.find(x => x.name === name);
+      return `<div class="top-product">
+        <img src="${p ? p.img : 'https://via.placeholder.com/44'}" alt="">
+        <div class="top-product-info">
+          <strong>${name}</strong>
+          <small>${stat.qty}টি বিক্রি</small>
+        </div>
+        <div class="top-product-amount">${formatTk(stat.revenue)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- Low stock ----------
+  function renderLowStock() {
+    const products = getProducts();
+    const low = products.filter(p => p.stock < 10).sort((a, b) => a.stock - b.stock);
+
+    document.getElementById('lowStockTable').innerHTML = low.length ? low.map(p => `
+      <tr>
+        <td>${p.name}</td>
+        <td>${stockBadge(p.stock)}</td>
+        <td><a href="product-form.html?id=${p.id}" class="btn btn-sm btn-outline">এডিট</a></td>
+      </tr>
+    `).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--gray-500);padding:20px">সব ঠিক আছে ✅</td></tr>';
+  }
+
+  // ---------- District breakdown ----------
+  function renderDistrictBreakdown() {
+    const orders = getOrders();
+    const products = getProducts();
+    const groups = {};
+
+    orders.forEach(o => {
+      (o.items_detail || []).forEach(it => {
+        const p = products.find(x => x.name === it.name);
+        const d = p ? p.district : 'other';
+        groups[d] = (groups[d] || 0) + it.price * it.qty;
+      });
+    });
+
+    const total = Object.values(groups).reduce((s, v) => s + v, 0) || 1;
+
+    document.getElementById('districtBreakdown').innerHTML = Object.entries(groups)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => {
+        const pct = Math.round((v / total) * 100);
+        return `<div class="progress-item">
+          <div class="progress-head">
+            <strong>${DIST_LABELS[k] || k}</strong>
+            <span>${formatTk(v)} (${pct}%)</span>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('') || '<p style="color:var(--gray-500)">কোনো ডেটা নেই</p>';
+  }
+
+  // ---------- Category breakdown ----------
+  function renderCategoryBreakdown() {
+    const orders = getOrders();
+    const products = getProducts();
+    const groups = {};
+
+    orders.forEach(o => {
+      (o.items_detail || []).forEach(it => {
+        const p = products.find(x => x.name === it.name);
+        const c = p ? p.category : 'other';
+        groups[c] = (groups[c] || 0) + it.price * it.qty;
+      });
+    });
+
+    const total = Object.values(groups).reduce((s, v) => s + v, 0) || 1;
+
+    document.getElementById('categoryBreakdown').innerHTML = Object.entries(groups)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => {
+        const pct = Math.round((v / total) * 100);
+        return `<div class="progress-item">
+          <div class="progress-head">
+            <strong>${CAT_LABELS[k] || k}</strong>
+            <span>${formatTk(v)} (${pct}%)</span>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('') || '<p style="color:var(--gray-500)">কোনো ডেটা নেই</p>';
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.report-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.report-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      ['sales', 'products', 'districts', 'categories'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+      });
+    });
+  });
+
+  // ---------- Init ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    renderKPIs();
+    renderSalesChart();
+    renderPaymentBreakdown();
+    renderStatusBreakdown();
+    renderTopProducts();
+    renderLowStock();
+    renderDistrictBreakdown();
+    renderCategoryBreakdown();
+  });
+</script>
+</body>
+</html>

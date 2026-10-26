@@ -1,0 +1,44 @@
+# ============================================
+# KachaBazar Admin — Git Ignore
+# ============================================
+
+# 🔒 Local config with secrets (NEVER commit!)
+js/config.js
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# Node (যদি ভবিষ্যতে ব্যবহার করেন)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build output (যদি পরে build tool যোগ করেন)
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Supabase (local development)
+.supabase/
+
+# Temporary files
+*.tmp
+*.bak

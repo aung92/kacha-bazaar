@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>বাল্ক ইমপোর্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .drop-zone { border:2px dashed var(--gray-300); border-radius:12px; padding:40px; text-align:center; cursor:pointer; transition:all 0.2s; background:#fff; }
+    .drop-zone:hover, .drop-zone.dragover { border-color:var(--green-500); background:var(--green-50); }
+    .drop-zone i { font-size:48px; color:var(--green-600); margin-bottom:12px; }
+    .preview-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; }
+    .preview-table th, .preview-table td { padding:6px 8px; border:1px solid var(--gray-200); text-align:left; }
+    .preview-table th { background:var(--gray-100); font-weight:600; }
+  </style>
+</head>
+<body data-title="বাল্ক ইমপোর্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📥 বাল্ক প্রোডাক্ট ইমপোর্ট (CSV)</h1>
+        <button class="btn btn-outline" onclick="downloadTemplate()"><i class="fa-solid fa-download"></i> টেম্পলেট</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <h3>CSV ফাইল আপলোড করুন</h3>
+            <p style="color:var(--gray-500); font-size:13px; margin-top:6px;">অথবা এখানে ড্র্যাগ করুন</p>
+          </div>
+          <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="handleFile(event)">
+        </div>
+      </div>
+
+      <div class="card" id="previewCard" style="display:none;">
+        <div class="card-head">
+          <h2>প্রিভিউ (<span id="previewCount">0</span>টি পণ্য)</h2>
+          <div>
+            <button class="btn btn-outline btn-sm" onclick="cancelImport()">বাতিল</button>
+            <button class="btn btn-primary btn-sm" onclick="importProducts()"><i class="fa-solid fa-check"></i> ইমপোর্ট</button>
+          </div>
+        </div>
+        <div class="card-body" style="overflow-x:auto;">
+          <div id="previewTable"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  let parsedData = [];
+
+  function downloadTemplate() {
+    const header = ['name', 'category', 'district', 'unit', 'price', 'oldPrice', 'stock', 'rating', 'img'];
+    const sample = ['পাহাড়ি মধু', 'honey', 'bandarban', '৫০০ গ্রাম', '850', '1000', '12', '5.0', 'https://example.com/honey.jpg'];
+    const csv = [header.join(','), sample.join(',')].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'products-template.csv';
+    a.click();
+    showToast('টেম্পলেট ডাউনলোড ✅', 'success');
+  }
+
+  function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => parseCSV(ev.target.result);
+    reader.readAsText(file);
+  }
+
+  function parseCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) { showToast('ফাইল খালি', 'error'); return; }
+    const headers = lines[0].split(',').map(h => h.trim());
+    parsedData = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = vals[i] || '');
+      return obj;
+    }).filter(o => o.name);
+
+    document.getElementById('previewCount').textContent = parsedData.length;
+    document.getElementById('previewCard').style.display = 'block';
+
+    const headers2 = ['name', 'category', 'district', 'unit', 'price', 'stock'];
+    document.getElementById('previewTable').innerHTML = `
+      <table class="preview-table">
+        <thead><tr>${headers2.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${parsedData.slice(0, 20).map(p => `<tr>${headers2.map(h => `<td>${p[h] || '—'}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+      ${parsedData.length > 20 ? `<p style="text-align:center; padding:10px; color:var(--gray-500); font-size:12px;">প্রথম ২০টি দেখানো হচ্ছে (মোট ${parsedData.length}টি)</p>` : ''}
+    `;
+  }
+
+  function importProducts() {
+    if (!parsedData.length) return;
+    if (!confirm(`${parsedData.length}টি পণ্য ইমপোর্ট করবেন?`)) return;
+
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    let nextId = Math.max(0, ...products.map(p => p.id)) + 1;
+
+    parsedData.forEach(p => {
+      products.push({
+        id: nextId++,
+        name: p.name,
+        category: p.category || 'veg',
+        district: p.district || 'rangamati',
+        farmer: '',
+        unit: p.unit || 'কেজি',
+        price: +p.price || 0,
+        oldPrice: +p.oldPrice || 0,
+        stock: +p.stock || 0,
+        rating: +p.rating || 4.5,
+        img: p.img || '',
+        active: true
+      });
+    });
+
+    AdminStore.set('products', products);
+    showToast(`${parsedData.length}টি পণ্য ইমপোর্ট ✅`, 'success');
+    cancelImport();
+  }
+
+  function cancelImport() {
+    parsedData = [];
+    document.getElementById('csvFile').value = '';
+    document.getElementById('previewCard').style.display = 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const dz = document.getElementById('dropZone');
+    ['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', ev => {
+      const f = ev.dataTransfer.files[0];
+      if (f) { const r = new FileReader(); r.onload = e => parseCSV(e.target.result); r.readAsText(f); }
+    });
+  });
+</script>
+</body>
+</html>

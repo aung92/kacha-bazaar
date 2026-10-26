@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COD সীমা — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="COD সীমা">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>💰 ক্যাশ অন ডেলিভারি সীমা</h1>
+        <button class="btn btn-primary" onclick="saveSettings()"><i class="fa-solid fa-save"></i> সেভ</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>সাধারণ সেটিংস</h2></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>সর্বোচ্চ COD অর্ডার (৳)</label>
+              <input type="number" id="codMax" min="0" value="5000">
+              <small>এই পরিমাণের বেশি অর্ডারে COD বন্ধ থাকবে</small>
+            </div>
+            <div class="form-group">
+              <label>সর্বনিম্ন COD অর্ডার (৳)</label>
+              <input type="number" id="codMin" min="0" value="100">
+            </div>
+          </div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="codEnabled" checked style="width:auto;accent-color:var(--green-600)"><span>COD চালু</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>সন্দেহজনক কাস্টমার (ব্লকড COD)</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>কাস্টমার</th><th>ফোন</th><th>কারণ</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="blockedBody"></tbody>
+            </table>
+          </div>
+          <div style="padding:16px;" class="no-print">
+            <div style="display:flex; gap:8px;">
+              <input type="tel" id="blockPhone" placeholder="ফোন নম্বর" style="flex:1; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:13px;">
+              <input type="text" id="blockReason" placeholder="কারণ" style="flex:2; padding:10px; border:1px solid var(--gray-200); border-radius:8px; font-family:inherit; font-size:13px;">
+              <button class="btn btn-danger" onclick="addBlocked()"><i class="fa-solid fa-ban"></i> ব্লক</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_COD = { max: 5000, min: 100, enabled: true, blocked: [{ phone: '01799999999', reason: '৩ বার রিটার্ন', date: '2025-01-15' }] };
+
+  function getCOD() { return { ...DEFAULT_COD, ...AdminStore.get('cod_limits', {}) }; }
+  function saveCOD(d) { AdminStore.set('cod_limits', d); }
+
+  function render() {
+    const d = getCOD();
+    document.getElementById('codMax').value = d.max;
+    document.getElementById('codMin').value = d.min;
+    document.getElementById('codEnabled').checked = d.enabled;
+
+    document.getElementById('blockedBody').innerHTML = d.blocked.map((b, i) => `
+      <tr>
+        <td>—</td>
+        <td><strong>${b.phone}</strong></td>
+        <td>${b.reason}</td>
+        <td>${formatDate(b.date)}</td>
+        <td class="actions"><button class="del" onclick="removeBlocked(${i})"><i class="fa-solid fa-unlock"></i></button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-500)">কোনো ব্লকড কাস্টমার নেই</td></tr>';
+  }
+
+  function saveSettings() {
+    const d = getCOD();
+    d.max = +document.getElementById('codMax').value;
+    d.min = +document.getElementById('codMin').value;
+    d.enabled = document.getElementById('codEnabled').checked;
+    saveCOD(d);
+    showToast('সেটিংস সেভ ✅', 'success');
+  }
+
+  function addBlocked() {
+    const phone = document.getElementById('blockPhone').value.trim();
+    const reason = document.getElementById('blockReason').value.trim();
+    if (!phone) { showToast('ফোন দিন', 'error'); return; }
+    const d = getCOD();
+    d.blocked.push({ phone, reason, date: new Date().toISOString().split('T')[0] });
+    saveCOD(d);
+    document.getElementById('blockPhone').value = '';
+    document.getElementById('blockReason').value = '';
+    render();
+    showToast('ব্লক ✅', 'success');
+  }
+
+  function removeBlocked(i) {
+    const d = getCOD();
+    d.blocked.splice(i, 1);
+    saveCOD(d);
+    render();
+    showToast('আনব্লক ✅', 'success');
+  }
+
+  render();
+</script>
+</body>
+</html>

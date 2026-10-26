@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>গিফট ভাউচার — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="গিফট ভাউচার">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🎁 গিফট ভাউচার</h1>
+        <button class="btn btn-primary" onclick="openVoucherModal()"><i class="fa-solid fa-plus"></i> নতুন ভাউচার</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>কোড</th><th>পরিমাণ</th><th>প্রাপক</th><th>মেয়াদ</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="voucherBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="voucherModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ভাউচার</h3>
+      <button class="close-modal" onclick="closeModal('voucherModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="voucherId">
+      <div class="form-row single">
+        <div class="form-group">
+          <label>ভাউচার কোড <span class="req">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="voucherCode" placeholder="GIFT500" style="text-transform:uppercase; flex:1;">
+            <button type="button" class="btn btn-outline" onclick="genCode()"><i class="fa-solid fa-dice"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>পরিমাণ (৳) <span class="req">*</span></label><input type="number" id="voucherAmount" min="1" placeholder="500"></div>
+        <div class="form-group"><label>মেয়াদ <span class="req">*</span></label><input type="date" id="voucherExpiry"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>প্রাপকের ফোন (ঐচ্ছিক)</label><input type="tel" id="voucherFor" placeholder="017XXXXXXXX"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('voucherModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveVoucher()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_VOUCHERS = [
+    { id: 1, code: 'GIFT500', amount: 500, for: '', expiry: '2025-12-31', used: false, date: '2025-01-01' },
+    { id: 2, code: 'WELCOME100', amount: 100, for: '01711111111', expiry: '2025-06-30', used: true, date: '2025-01-05' }
+  ];
+
+  function getVouchers() { return AdminStore.get('gift_vouchers', DEFAULT_VOUCHERS); }
+  function saveVouchers(l) { AdminStore.set('gift_vouchers', l); }
+
+  function render() {
+    document.getElementById('voucherBody').innerHTML = getVouchers().map(v => {
+      const expired = new Date(v.expiry) < new Date();
+      const status = v.used ? '<span class="badge badge-inactive">ব্যবহৃত</span>' : expired ? '<span class="badge badge-cancelled">এক্সপায়ার্ড</span>' : '<span class="badge badge-active">সক্রিয়</span>';
+      return `<tr>
+        <td><code style="background:var(--gray-100); padding:4px 10px; border-radius:6px; font-weight:700;">${v.code}</code></td>
+        <td><strong>${formatTk(v.amount)}</strong></td>
+        <td>${v.for || '—'}</td>
+        <td>${formatDate(v.expiry)}</td>
+        <td>${status}</td>
+        <td class="actions">
+          <button class="del" onclick="deleteVoucher(${v.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function genCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'GIFT';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('voucherCode').value = code;
+  }
+
+  function openVoucherModal() {
+    document.getElementById('voucherId').value = '';
+    document.getElementById('voucherCode').value = '';
+    document.getElementById('voucherAmount').value = '';
+    document.getElementById('voucherExpiry').value = '';
+    document.getElementById('voucherFor').value = '';
+    document.getElementById('modalTitle').textContent = 'নতুন ভাউচার';
+    document.getElementById('voucherModal').classList.add('show');
+  }
+
+  function saveVoucher() {
+    const code = document.getElementById('voucherCode').value.trim().toUpperCase();
+    const amount = +document.getElementById('voucherAmount').value;
+    const expiry = document.getElementById('voucherExpiry').value;
+    if (!code || !amount || !expiry) { showToast('সব ঘর পূরণ করুন', 'error'); return; }
+    if (getVouchers().some(v => v.code === code)) { showToast('কোড আগে আছে', 'error'); return; }
+
+    const list = getVouchers();
+    list.unshift({
+      id: Date.now(), code, amount, expiry,
+      for: document.getElementById('voucherFor').value.trim(),
+      used: false,
+      date: new Date().toISOString().split('T')[0]
+    });
+    saveVouchers(list);
+    closeModal('voucherModal');
+    render();
+    showToast('ভাউচার তৈরি ✅', 'success');
+  }
+
+  function deleteVoucher(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveVouchers(getVouchers().filter(v => v.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

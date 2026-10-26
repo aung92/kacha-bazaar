@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>উইশলিস্ট — কাচাবাজার</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--gray-50); }
+
+    .page-header {
+      background: #fff;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--gray-200);
+      margin-bottom: 32px;
+    }
+    .page-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .page-header h1 i { color: var(--red-500); }
+    .page-header p { color: var(--gray-500); font-size: 14px; margin-top: 4px; }
+
+    .wishlist-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .wishlist-toolbar .count-text {
+      font-size: 14px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+    .wishlist-toolbar .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .wishlist-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding-bottom: 60px;
+    }
+
+    .empty-wishlist {
+      background: #fff;
+      border-radius: 12px;
+      padding: 80px 20px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      grid-column: 1 / -1;
+    }
+    .empty-wishlist i {
+      font-size: 64px;
+      color: var(--gray-300);
+      margin-bottom: 20px;
+    }
+
+    .wish-card {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .wish-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+    .wish-card .wish-img {
+      height: 180px;
+      background: var(--gray-100);
+      overflow: hidden;
+      position: relative;
+    }
+    .wish-card .wish-img img { width: 100%; height: 100%; object-fit: cover; }
+    .wish-card .remove-wish {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      font-size: 14px;
+      color: var(--red-500);
+      z-index: 3;
+      transition: background .2s;
+    }
+    .wish-card .remove-wish:hover { background: #fee2e2; }
+    .wish-card .wish-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+    .wish-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .wish-card .unit { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+    .wish-card .rating { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+    .wish-card .rating i { color: var(--yellow-400); }
+    .wish-card .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      gap: 8px;
+    }
+    .wish-card .price { font-size: 17px; font-weight: 700; color: var(--green-700); }
+    .wish-card .old-price {
+      font-size: 13px;
+      color: var(--gray-500);
+      text-decoration: line-through;
+      margin-left: 6px;
+      font-weight: 400;
+    }
+    .wish-card .add-cart-btn {
+      background: var(--green-600);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+    .wish-card .add-cart-btn:hover { background: var(--green-700); }
+    .wish-card .out-of-stock {
+      background: var(--gray-200);
+      color: var(--gray-500);
+      cursor: not-allowed;
+    }
+    .wish-card .out-of-stock:hover { background: var(--gray-200); }
+
+    @media (max-width: 900px) {
+      .wishlist-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .wishlist-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .wish-card .wish-img { height: 140px; }
+      .wish-card .add-cart-btn span { display: none; }
+      .wish-card .add-cart-btn { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-header">
+  <div class="container">
+    <h1><i class="fa-solid fa-heart"></i> আমার উইশলিস্ট</h1>
+    <p>পছন্দের পণ্যগুলো এখানে সেভ করে রাখুন</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="wishlist-toolbar" id="wishToolbar" style="display:none">
+    <span class="count-text" id="wishCount"></span>
+    <div class="toolbar-actions">
+      <button class="btn btn-outline" onclick="addAllToCart()">
+        <i class="fa-solid fa-cart-plus"></i> সব কার্টে যোগ করুন
+      </button>
+      <button class="btn btn-outline" style="color:var(--red-500);border-color:var(--red-500)" onclick="clearWishlist()">
+        <i class="fa-solid fa-trash"></i> সব মুছুন
+      </button>
+    </div>
+  </div>
+
+  <div class="wishlist-grid" id="wishlistGrid"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/main.js"></script>
+<script>
+  let allProductsCache = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    // API থেকে লোড
+    try {
+      allProductsCache = await loadProducts();
+    } catch (e) {
+      allProductsCache = PRODUCTS;
+    }
+    renderWishlist();
+  });
+
+  function getWishProducts() {
+    const ids = Wishlist.get();
+    return ids
+      .map(id => allProductsCache.find(p => Number(p.id) === Number(id)))
+      .filter(Boolean);
+  }
+
+  function renderWishlist() {
+    const grid = document.getElementById('wishlistGrid');
+    const toolbar = document.getElementById('wishToolbar');
+    const items = getWishProducts();
+
+    if (!items.length) {
+      toolbar.style.display = 'none';
+      grid.innerHTML = `
+        <div class="empty-wishlist">
+          <i class="fa-regular fa-heart"></i>
+          <h2 style="font-size:22px;margin-bottom:10px">উইশলিস্ট খালি</h2>
+          <p style="color:var(--gray-500);margin-bottom:24px">পছন্দের পণ্যে হার্ট আইকনে ক্লিক করে এখানে সেভ করুন।</p>
+          <a href="shop.html" class="btn btn-primary" style="padding:12px 30px;">শপে ফিরে যান</a>
+        </div>`;
+      return;
+    }
+
+    toolbar.style.display = 'flex';
+    document.getElementById('wishCount').textContent = `${items.length}টি পণ্য সেভ করা আছে`;
+
+    grid.innerHTML = items.map(p => {
+      const dist = typeof getDistrict === 'function' ? getDistrict(p.district) : null;
+      const outOfStock = Number(p.stock) === 0;
+      const oldPrice = p.oldPrice || p.old_price;
+      return `
+        <div class="wish-card">
+          <div class="wish-img">
+            <a href="product.html?id=${p.id}">
+              <img src="${p.img}" alt="${p.name}" loading="lazy">
+            </a>
+            <button class="remove-wish" onclick="removeWish(${p.id})" title="উইশলিস্ট থেকে সরান">
+              <i class="fa-solid fa-heart"></i>
+            </button>
+          </div>
+          <div class="wish-body">
+            ${dist ? `<span class="district-tag" style="background:${dist.color}20;color:${dist.color};align-self:flex-start;margin-bottom:6px">
+              ${dist.emoji} ${dist.name}
+            </span>` : ''}
+            <a href="product.html?id=${p.id}"><h3>${p.name}</h3></a>
+            <p class="unit">প্রতি ${p.unit}</p>
+            <div class="rating"><i class="fa-solid fa-star"></i> ${p.rating}</div>
+            <div class="price-row">
+              <div>
+                <span class="price">${formatTk(p.price)}</span>
+                ${oldPrice ? `<span class="old-price">${formatTk(oldPrice)}</span>` : ''}
+              </div>
+              ${outOfStock
+                ? `<button class="add-cart-btn out-of-stock" disabled>স্টক নেই</button>`
+                : `<button class="add-cart-btn" onclick="addToCart(${p.id})">
+                    <i class="fa-solid fa-cart-plus"></i> <span>কার্টে</span>
+                  </button>`}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function addToCart(id) {
+    Cart.add(id, 1);
+    showToast('কার্টে যোগ হয়েছে ✅', 'success');
+  }
+
+  function removeWish(id) {
+    Wishlist.toggle(id);
+    renderWishlist();
+    showToast('উইশলিস্ট থেকে সরানো হয়েছে', 'error');
+  }
+
+  function addAllToCart() {
+    const items = getWishProducts().filter(p => Number(p.stock) !== 0);
+    if (!items.length) {
+      showToast('কার্টে যোগ করার মতো কোনো পণ্য নেই', 'error');
+      return;
+    }
+    items.forEach(p => Cart.add(p.id, 1));
+    showToast(`${items.length}টি পণ্য কার্টে যোগ হয়েছে ✅`, 'success');
+  }
+
+  function clearWishlist() {
+    if (!confirm('সব উইশলিস্ট আইটেম মুছে ফেলবেন?')) return;
+    localStorage.removeItem('kc_wishlist');
+    renderWishlist();
+    showToast('উইশলিস্ট খালি করা হয়েছে', 'error');
+  }
+</script>
+<script src="js/pwa-init.js"></script>
+</body>
+</html>

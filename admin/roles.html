@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>রোল / পারমিশন — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="রোল / পারমিশন">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🔐 রোল / পারমিশন</h1>
+        <button class="btn btn-primary" onclick="openRoleModal()"><i class="fa-solid fa-plus"></i> নতুন রোল</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="font-size:13px; padding:14px 20px;">
+          <i class="fa-solid fa-info-circle" style="color:var(--green-600)"></i>
+          এখানে অ্যাডমিন ইউজারের রোল তৈরি করা যাবে। প্রতিটি রোলে আলাদা পারমিশন দেওয়া যাবে। বর্তমানে ডেমো, Supabase-এর সাথে সত্যিকারের অথেন্টিকেশন হবে।
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>রোল</th><th>বর্ণনা</th><th>পারমিশন</th><th>ইউজার</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="roleBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="roleModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন রোল</h3>
+      <button class="close-modal" onclick="closeModal('roleModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="roleId">
+      <div class="form-row single">
+        <div class="form-group"><label>রোলের নাম <span class="req">*</span></label><input type="text" id="roleName" placeholder="যেমন: Manager"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label>বর্ণনা</label><textarea id="roleDesc" rows="2"></textarea></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>পারমিশন</label>
+          <div id="permList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; background:var(--gray-50); border-radius:8px;">
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="products" style="width:auto"> পণ্য</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="orders" style="width:auto"> অর্ডার</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="customers" style="width:auto"> কাস্টমার</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="coupons" style="width:auto"> কুপন</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="reports" style="width:auto"> রিপোর্ট</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="settings" style="width:auto"> সেটিংস</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="payouts" style="width:auto"> পেমেন্ট</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" value="reviews" style="width:auto"> রিভিউ</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('roleModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveRole()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_ROLES = [
+    { id: 1, name: 'Super Admin', desc: 'সম্পূর্ণ অ্যাক্সেস', perms: ['products','orders','customers','coupons','reports','settings','payouts','reviews'], users: 1 },
+    { id: 2, name: 'Manager', desc: 'দৈনন্দিন অপারেশন', perms: ['products','orders','customers','coupons','reports'], users: 2 },
+    { id: 3, name: 'Support', desc: 'শুধু কাস্টমার সাপোর্ট', perms: ['orders','customers'], users: 1 }
+  ];
+
+  function getRoles() { return AdminStore.get('roles', DEFAULT_ROLES); }
+  function saveRoles(l) { AdminStore.set('roles', l); }
+
+  function render() {
+    document.getElementById('roleBody').innerHTML = getRoles().map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${r.desc || '—'}</td>
+        <td><span class="badge badge-active">${r.perms.length}টি</span></td>
+        <td>${r.users || 0} জন</td>
+        <td class="actions">
+          <button onclick="editRole(${r.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteRole(${r.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openRoleModal() {
+    document.getElementById('roleId').value = '';
+    document.getElementById('roleName').value = '';
+    document.getElementById('roleDesc').value = '';
+    document.querySelectorAll('#permList input').forEach(c => c.checked = false);
+    document.getElementById('modalTitle').textContent = 'নতুন রোল';
+    document.getElementById('roleModal').classList.add('show');
+  }
+
+  function editRole(id) {
+    const r = getRoles().find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('roleId').value = r.id;
+    document.getElementById('roleName').value = r.name;
+    document.getElementById('roleDesc').value = r.desc || '';
+    document.querySelectorAll('#permList input').forEach(c => c.checked = r.perms.includes(c.value));
+    document.getElementById('modalTitle').textContent = 'এডিট — ' + r.name;
+    document.getElementById('roleModal').classList.add('show');
+  }
+
+  function saveRole() {
+    const id = document.getElementById('roleId').value;
+    const name = document.getElementById('roleName').value.trim();
+    if (!name) { showToast('রোলের নাম দিন', 'error'); return; }
+    const perms = [...document.querySelectorAll('#permList input:checked')].map(c => c.value);
+    const data = { name, desc: document.getElementById('roleDesc').value.trim(), perms };
+    const list = getRoles();
+    if (id) {
+      const idx = list.findIndex(x => x.id === +id);
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: Date.now(), ...data, users: 0 });
+    }
+    saveRoles(list);
+    closeModal('roleModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function deleteRole(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveRoles(getRoles().filter(r => r.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

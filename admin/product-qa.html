@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>প্রোডাক্ট Q&A — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .qa-card { padding:16px 20px; border-bottom:1px solid var(--gray-200); }
+    .qa-card:last-child { border-bottom:none; }
+    .qa-question { font-size:14px; font-weight:600; margin-bottom:6px; }
+    .qa-meta { font-size:12px; color:var(--gray-500); margin-bottom:8px; }
+    .qa-answer { background:#f0fdf4; padding:10px 12px; border-radius:6px; border-left:3px solid var(--green-600); font-size:13px; margin-top:8px; }
+  </style>
+</head>
+<body data-title="প্রোডাক্ট Q&A">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>💬 প্রোডাক্ট Q&A</h1>
+        <span class="badge badge-pending" id="pendingBadge" style="font-size:13px; padding:6px 14px;">0টি উত্তরহীন</span>
+      </div>
+
+      <div class="card">
+        <div id="qaList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="answerModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>উত্তর দিন</h3>
+      <button class="close-modal" onclick="closeModal('answerModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="answerId">
+      <div id="answerQuestion" style="background:var(--gray-50); padding:12px; border-radius:8px; margin-bottom:14px; font-size:13px;"></div>
+      <div class="form-group"><label>আপনার উত্তর <span class="req">*</span></label><textarea id="answerText" rows="4" placeholder="কাস্টমারের প্রশ্নের উত্তর..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('answerModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="submitAnswer()"><i class="fa-solid fa-check"></i> উত্তর দিন</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_QA = [
+    { id: 1, product: 'পাহাড়ি মধু', customer: 'রফিক আহমেদ', question: 'এই মধু কি ১০০% খাঁটি?', answer: 'হ্যাঁ, সরাসরি কৃষকের কাছ থেকে সংগ্রহ করা।', date: '2025-01-21' },
+    { id: 2, product: 'পাহাড়ি কমলা', customer: 'সাদিয়া ইসলাম', question: 'এক কেজিতে কতটি কমলা থাকে?', answer: '', date: '2025-01-20' }
+  ];
+
+  function getQA() { return AdminStore.get('product_qa', DEFAULT_QA); }
+  function saveQA(l) { AdminStore.set('product_qa', l); }
+
+  function render() {
+    const list = getQA();
+    const pending = list.filter(q => !q.answer).length;
+    document.getElementById('pendingBadge').textContent = pending + 'টি উত্তরহীন';
+
+    document.getElementById('qaList').innerHTML = list.map(q => `
+      <div class="qa-card">
+        <div class="qa-question">Q: ${q.question}</div>
+        <div class="qa-meta"><strong>${q.customer}</strong> · ${q.product} · ${formatDate(q.date)}</div>
+        ${q.answer ? `<div class="qa-answer"><strong>A:</strong> ${q.answer}</div>` : `
+          <button class="btn btn-primary btn-sm" onclick="openAnswer(${q.id})"><i class="fa-solid fa-reply"></i> উত্তর দিন</button>
+        `}
+        <div style="margin-top:8px;">
+          <button class="btn btn-sm btn-danger" onclick="deleteQA(${q.id})"><i class="fa-solid fa-trash"></i> ডিলিট</button>
+        </div>
+      </div>
+    `).join('') || '<div class="empty-state"><p>কোনো প্রশ্ন নেই</p></div>';
+  }
+
+  function openAnswer(id) {
+    const q = getQA().find(x => x.id === id);
+    if (!q) return;
+    document.getElementById('answerId').value = id;
+    document.getElementById('answerQuestion').innerHTML = `<strong>প্রশ্ন:</strong> ${q.question}`;
+    document.getElementById('answerText').value = q.answer || '';
+    document.getElementById('answerModal').classList.add('show');
+  }
+
+  function submitAnswer() {
+    const id = +document.getElementById('answerId').value;
+    const text = document.getElementById('answerText').value.trim();
+    if (!text) { showToast('উত্তর লিখুন', 'error'); return; }
+    const list = getQA();
+    const idx = list.findIndex(q => q.id === id);
+    if (idx < 0) return;
+    list[idx].answer = text;
+    saveQA(list);
+    closeModal('answerModal');
+    render();
+    showToast('উত্তর সেভ ✅', 'success');
+  }
+
+  function deleteQA(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveQA(getQA().filter(q => q.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

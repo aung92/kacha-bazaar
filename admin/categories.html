@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ক্যাটাগরি — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="ক্যাটাগরি">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🏷️ ক্যাটাগরি</h1>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="fa-solid fa-plus"></i> নতুন ক্যাটাগরি
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Emoji</th>
+                  <th>নাম</th>
+                  <th>ID</th>
+                  <th>পণ্য</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="catBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন ক্যাটাগরি</h3>
+      <button class="close-modal" onclick="closeModal('catModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Emoji <span class="req">*</span></label>
+          <input type="text" id="catEmoji" placeholder="🥬" maxlength="4" style="font-size:22px;text-align:center">
+        </div>
+        <div class="form-group">
+          <label>ID (English) <span class="req">*</span></label>
+          <input type="text" id="catId" placeholder="veg" pattern="[a-z0-9]+">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>বাংলা নাম <span class="req">*</span></label>
+          <input type="text" id="catName" placeholder="সবজি">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('catModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveCategory()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_CATS = [
+    { id: 'veg', name: 'সবজি', emoji: '🥬' },
+    { id: 'fruit', name: 'ফলমূল', emoji: '🍎' },
+    { id: 'fish', name: 'মাছ', emoji: '🐟' },
+    { id: 'meat', name: 'মাংস', emoji: '🍖' },
+    { id: 'dairy', name: 'দুধ ও ডিম', emoji: '🥚' },
+    { id: 'spice', name: 'মসলা', emoji: '🌶️' },
+    { id: 'honey', name: 'মধু', emoji: '🍯' },
+    { id: 'rice', name: 'চাল ও ডাল', emoji: '🌾' },
+    { id: 'organic', name: 'অর্গানিক', emoji: '🌿' }
+  ];
+
+  let editingCatId = null;
+
+  function getCats() { return AdminStore.get('categories', DEFAULT_CATS); }
+  function saveCats(list) { AdminStore.set('categories', list); }
+
+  function render() {
+    const cats = getCats();
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    document.getElementById('catBody').innerHTML = cats.map(c => {
+      const count = products.filter(p => p.category === c.id).length;
+      return `<tr>
+        <td style="font-size:24px">${c.emoji}</td>
+        <td><strong>${c.name}</strong></td>
+        <td><code>${c.id}</code></td>
+        <td><span class="badge badge-active">${count}টি</span></td>
+        <td class="actions">
+          <button onclick="openEditModal('${c.id}')" title="এডিট"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteCat('${c.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function openAddModal() {
+    editingCatId = null;
+    document.getElementById('modalTitle').textContent = 'নতুন ক্যাটাগরি';
+    document.getElementById('catEmoji').value = '';
+    document.getElementById('catId').value = '';
+    document.getElementById('catName').value = '';
+    document.getElementById('catModal').classList.add('show');
+  }
+
+  function openEditModal(id) {
+    const c = getCats().find(x => x.id === id);
+    if (!c) return;
+    editingCatId = id;
+    document.getElementById('modalTitle').textContent = 'ক্যাটাগরি এডিট';
+    document.getElementById('catEmoji').value = c.emoji;
+    document.getElementById('catId').value = c.id;
+    document.getElementById('catId').disabled = true;
+    document.getElementById('catName').value = c.name;
+    document.getElementById('catModal').classList.add('show');
+  }
+
+  function saveCategory() {
+    const emoji = document.getElementById('catEmoji').value.trim();
+    const id = document.getElementById('catId').value.trim().toLowerCase();
+    const name = document.getElementById('catName').value.trim();
+
+    if (!emoji || !id || !name) { showToast('সব ঘর পূরণ করুন', 'error'); return; }
+
+    const cats = getCats();
+
+    if (editingCatId) {
+      const idx = cats.findIndex(c => c.id === editingCatId);
+      cats[idx] = { id: editingCatId, name, emoji };
+      showToast('ক্যাটাগরি আপডেট ✅', 'success');
+    } else {
+      if (cats.some(c => c.id === id)) { showToast('এই ID আগে থেকেই আছে', 'error'); return; }
+      cats.push({ id, name, emoji });
+      showToast('ক্যাটাগরি যোগ হয়েছে ✅', 'success');
+    }
+    saveCats(cats);
+    closeModal('catModal');
+    document.getElementById('catId').disabled = false;
+    render();
+  }
+
+  function deleteCat(id) {
+    const products = AdminStore.get('products', DEMO_PRODUCTS);
+    const count = products.filter(p => p.category === id).length;
+    if (count > 0) {
+      if (!confirm(`এই ক্যাটাগরিতে ${count}টি পণ্য আছে। তারা 'সবজি' তে চলে যাবে। চালিয়ে যাবেন?`)) return;
+      // Reassign to 'veg'
+      const updated = products.map(p => p.category === id ? { ...p, category: 'veg' } : p);
+      AdminStore.set('products', updated);
+    } else {
+      if (!confirm('ক্যাটাগরি ডিলিট করতে চান?')) return;
+    }
+    saveCats(getCats().filter(c => c.id !== id));
+    showToast('ক্যাটাগরি ডিলিট ✅', 'success');
+    render();
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  render();
+</script>
+</body>
+</html>

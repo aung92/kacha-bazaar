@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কুপন — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .coupon-code {
+      font-family: monospace;
+      background: var(--gray-100);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body data-title="কুপন">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🎟️ কুপন ও ডিসকাউন্ট</h1>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="fa-solid fa-plus"></i> নতুন কুপন
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 কোড দিয়ে খুঁজুন...">
+        <select id="filterStatus">
+          <option value="">সব</option>
+          <option value="active">সক্রিয়</option>
+          <option value="expired">এক্সপায়ার্ড</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>কোড</th>
+                  <th>ধরন</th>
+                  <th>ছাড়</th>
+                  <th>মিন অর্ডার</th>
+                  <th>সময়সীমা</th>
+                  <th>ব্যবহার</th>
+                  <th>স্ট্যাটাস</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="couponBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="couponModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="modalTitle">নতুন কুপন</h3>
+      <button class="close-modal" onclick="closeModal('couponModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row single">
+        <div class="form-group">
+          <label>কুপন কোড <span class="req">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="couponCode" placeholder="SAVE10" style="text-transform:uppercase;flex:1">
+            <button type="button" class="btn btn-outline" onclick="generateCode()">
+              <i class="fa-solid fa-dice"></i> তৈরি
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ছাড়ের ধরন <span class="req">*</span></label>
+          <select id="couponType">
+            <option value="percent">শতাংশ (%)</option>
+            <option value="flat">ফ্ল্যাট (৳)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>পরিমাণ <span class="req">*</span></label>
+          <input type="number" id="couponAmount" min="0" placeholder="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>মিন অর্ডার (৳)</label>
+          <input type="number" id="couponMin" min="0" placeholder="500" value="0">
+        </div>
+        <div class="form-group">
+          <label>সর্বোচ্চ ছাড় (শতাংশ হলে)</label>
+          <input type="number" id="couponMax" min="0" placeholder="200">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>শুরুর তারিখ <span class="req">*</span></label>
+          <input type="date" id="couponStart">
+        </div>
+        <div class="form-group">
+          <label>শেষ তারিখ <span class="req">*</span></label>
+          <input type="date" id="couponEnd">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>ব্যবহারের সীমা</label>
+          <input type="number" id="couponLimit" min="0" placeholder="100" value="100">
+        </div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-top:12px">
+        <input type="checkbox" id="couponActive" checked style="width:auto;accent-color:var(--green-600)">
+        <span>সক্রিয়</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('couponModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveCoupon()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  const DEFAULT_COUPONS = [
+    { id: 1, code: 'SAVE10', type: 'percent', amount: 10, minOrder: 500, maxDiscount: 200, start: '2025-01-01', end: '2025-12-31', used: 12, limit: 100, active: true },
+    { id: 2, code: 'FLAT50', type: 'flat', amount: 50, minOrder: 300, maxDiscount: 0, start: '2025-01-15', end: '2025-02-28', used: 8, limit: 50, active: true },
+    { id: 3, code: 'EID20', type: 'percent', amount: 20, minOrder: 1000, maxDiscount: 300, start: '2025-01-01', end: '2025-01-31', used: 45, limit: 200, active: false }
+  ];
+
+  let editingId = null;
+
+  function getCoupons() {
+    return AdminStore.get('coupons', DEFAULT_COUPONS);
+  }
+  function saveCoupons(list) {
+    AdminStore.set('coupons', list);
+  }
+
+  function isExpired(c) {
+    return new Date(c.end) < new Date();
+  }
+
+  function render() {
+    const search = (document.getElementById('searchInput').value || '').toUpperCase().trim();
+    const status = document.getElementById('filterStatus').value;
+
+    let list = getCoupons();
+    if (search) list = list.filter(c => c.code.includes(search));
+    if (status === 'active') list = list.filter(c => c.active && !isExpired(c));
+    if (status === 'expired') list = list.filter(c => isExpired(c));
+
+    document.getElementById('couponBody').innerHTML = list.map(c => {
+      const expired = isExpired(c);
+      const statusHtml = !c.active ? '<span class="badge badge-inactive">নিষ্ক্রিয়</span>'
+        : expired ? '<span class="badge badge-cancelled">এক্সপায়ার্ড</span>'
+        : '<span class="badge badge-active">সক্রিয়</span>';
+
+      const discount = c.type === 'percent' ? `${c.amount}%` : formatTk(c.amount);
+
+      return `<tr>
+        <td><span class="coupon-code">${c.code}</span></td>
+        <td>${c.type === 'percent' ? 'শতাংশ' : 'ফ্ল্যাট'}</td>
+        <td><strong>${discount}</strong>${c.maxDiscount ? `<br><small style="color:var(--gray-500)">সর্বোচ্চ ${formatTk(c.maxDiscount)}</small>` : ''}</td>
+        <td>${formatTk(c.minOrder)}</td>
+        <td>${formatDate(c.start)} —<br>${formatDate(c.end)}</td>
+        <td>${c.used || 0}/${c.limit || '∞'}</td>
+        <td>${statusHtml}</td>
+        <td class="actions">
+          <button onclick="openEditModal(${c.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="del" onclick="deleteCoupon(${c.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-500)">কোনো কুপন নেই</td></tr>';
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'নতুন কুপন';
+    document.getElementById('couponCode').value = '';
+    document.getElementById('couponCode').disabled = false;
+    document.getElementById('couponType').value = 'percent';
+    document.getElementById('couponAmount').value = '';
+    document.getElementById('couponMin').value = 0;
+    document.getElementById('couponMax').value = '';
+    document.getElementById('couponStart').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('couponEnd').value = '';
+    document.getElementById('couponLimit').value = 100;
+    document.getElementById('couponActive').checked = true;
+    document.getElementById('couponModal').classList.add('show');
+  }
+
+  function openEditModal(id) {
+    const c = getCoupons().find(x => x.id === id);
+    if (!c) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'কুপন এডিট';
+    document.getElementById('couponCode').value = c.code;
+    document.getElementById('couponCode').disabled = true;
+    document.getElementById('couponType').value = c.type;
+    document.getElementById('couponAmount').value = c.amount;
+    document.getElementById('couponMin').value = c.minOrder;
+    document.getElementById('couponMax').value = c.maxDiscount || '';
+    document.getElementById('couponStart').value = c.start;
+    document.getElementById('couponEnd').value = c.end;
+    document.getElementById('couponLimit').value = c.limit;
+    document.getElementById('couponActive').checked = c.active;
+    document.getElementById('couponModal').classList.add('show');
+  }
+
+  function generateCode() {
+    const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('couponCode').value = code;
+  }
+
+  function saveCoupon() {
+    const code = document.getElementById('couponCode').value.trim().toUpperCase();
+    const type = document.getElementById('couponType').value;
+    const amount = +document.getElementById('couponAmount').value;
+    const minOrder = +document.getElementById('couponMin').value || 0;
+    const maxDiscount = +document.getElementById('couponMax').value || 0;
+    const start = document.getElementById('couponStart').value;
+    const end = document.getElementById('couponEnd').value;
+    const limit = +document.getElementById('couponLimit').value || 100;
+    const active = document.getElementById('couponActive').checked;
+
+    if (!code || !amount || !start || !end) {
+      showToast('সব প্রয়োজনীয় ঘর পূরণ করুন', 'error');
+      return;
+    }
+    if (new Date(end) < new Date(start)) {
+      showToast('শেষ তারিখ শুরুর পরে হতে হবে', 'error');
+      return;
+    }
+
+    const coupons = getCoupons();
+
+    if (editingId) {
+      const idx = coupons.findIndex(c => c.id === editingId);
+      coupons[idx] = { ...coupons[idx], type, amount, minOrder, maxDiscount, start, end, limit, active };
+      showToast('কুপন আপডেট ✅', 'success');
+    } else {
+      if (coupons.some(c => c.code === code)) {
+        showToast('এই কোড আগে থেকেই আছে', 'error');
+        return;
+      }
+      const newId = Math.max(0, ...coupons.map(c => c.id)) + 1;
+      coupons.push({ id: newId, code, type, amount, minOrder, maxDiscount, start, end, used: 0, limit, active });
+      showToast('কুপন যোগ হয়েছে ✅', 'success');
+    }
+
+    saveCoupons(coupons);
+    closeModal('couponModal');
+    document.getElementById('couponCode').disabled = false;
+    render();
+  }
+
+  function deleteCoupon(id) {
+    if (!confirm('কুপন ডিলিট করবেন?')) return;
+    saveCoupons(getCoupons().filter(c => c.id !== id));
+    showToast('ডিলিট ✅', 'success');
+    render();
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('filterStatus').addEventListener('change', render);
+  });
+</script>
+</body>
+</html>

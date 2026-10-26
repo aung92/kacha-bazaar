@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কৃষক প্রোফাইল — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .fp-card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid var(--gray-200); display:flex; gap:16px; align-items:flex-start; }
+    .fp-avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#16a34a,#0891b2); color:#fff; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; flex-shrink:0; object-fit:cover; }
+    .fp-info { flex:1; }
+    .fp-info h3 { font-size:18px; margin-bottom:4px; }
+    .fp-info .meta { color:var(--gray-500); font-size:13px; margin-bottom:8px; }
+    .fp-story { font-size:13px; color:var(--gray-700); line-height:1.6; background:var(--gray-50); padding:12px; border-radius:8px; border-left:3px solid var(--green-600); margin-top:10px; }
+  </style>
+</head>
+<body data-title="কৃষক প্রোফাইল">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>👨‍🌾 কৃষক প্রোফাইল</h1>
+      </div>
+
+      <div id="farmersList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="fpModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><h3 id="modalTitle">প্রোফাইল এডিট</h3><button class="close-modal" onclick="closeModal('fpModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="fpId">
+      <div class="form-row single"><div class="form-group"><label>ছবির URL</label><input type="url" id="fpImage" placeholder="https://..."></div></div>
+      <div class="form-row single"><div class="form-group"><label>গল্প / বায়ো</label><textarea id="fpStory" rows="4" placeholder="কৃষকের গল্প, অভিজ্ঞতা..."></textarea></div></div>
+      <div class="form-row single"><div class="form-group"><label>ভিডিও URL (ঐচ্ছিক)</label><input type="url" id="fpVideo" placeholder="https://youtube.com/..."></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('fpModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveProfile()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  function getFarmers() { return AdminStore.get('farmers', FARMERS); }
+  function getProfiles() { return AdminStore.get('farmer_profiles', {}); }
+  function saveProfiles(d) { AdminStore.set('farmer_profiles', d); }
+
+  function render() {
+    const farmers = getFarmers();
+    const profiles = getProfiles();
+    const distNames = { rangamati: 'রাঙ্গামাটি', khagrachari: 'খাগড়াছড়ি', bandarban: 'বান্দরবান' };
+
+    document.getElementById('farmersList').innerHTML = farmers.map(f => {
+      const p = profiles[f.id] || {};
+      const avatar = p.image
+        ? `<img src="${p.image}" class="fp-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="fp-avatar" style="display:none;">${f.name[0]}</div>`
+        : `<div class="fp-avatar">${f.name[0]}</div>`;
+      return `
+        <div class="fp-card">
+          ${avatar}
+          <div class="fp-info">
+            <h3>${f.name}</h3>
+            <div class="meta">📍 ${f.village}, ${distNames[f.district] || f.district} · ${f.years} বছর অভিজ্ঞতা · ${f.crop}</div>
+            ${p.story ? `<div class="fp-story">${p.story}</div>` : '<p style="color:var(--gray-500); font-size:13px;">কোনো গল্প যোগ করা হয়নি</p>'}
+            <div style="margin-top:10px;">
+              <button class="btn btn-primary btn-sm" onclick="editProfile('${f.id}')"><i class="fa-solid fa-pen"></i> এডিট</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function editProfile(id) {
+    const p = getProfiles()[id] || {};
+    document.getElementById('fpId').value = id;
+    document.getElementById('fpImage').value = p.image || '';
+    document.getElementById('fpStory').value = p.story || '';
+    document.getElementById('fpVideo').value = p.video || '';
+    document.getElementById('modalTitle').textContent = 'প্রোফাইল এডিট';
+    document.getElementById('fpModal').classList.add('show');
+  }
+
+  function saveProfile() {
+    const id = document.getElementById('fpId').value;
+    const data = getProfiles();
+    data[id] = {
+      image: document.getElementById('fpImage').value.trim(),
+      story: document.getElementById('fpStory').value.trim(),
+      video: document.getElementById('fpVideo').value.trim()
+    };
+    saveProfiles(data);
+    closeModal('fpModal');
+    render();
+    showToast('সেভ ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  render();
+</script>
+</body>
+</html>

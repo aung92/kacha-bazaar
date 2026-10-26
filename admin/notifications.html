@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>নোটিফিকেশন ব্রডকাস্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="নোটিফিকেশন ব্রডকাস্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>📢 নোটিফিকেশন ব্রডকাস্ট</h1>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>নতুন নোটিফিকেশন পাঠান</h2></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>চ্যানেল</label>
+              <select id="channel">
+                <option value="all">সব চ্যানেল</option>
+                <option value="sms">SMS</option>
+                <option value="email">ইমেইল</option>
+                <option value="push">পুশ নোটিফিকেশন</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>টার্গেট</label>
+              <select id="target">
+                <option value="all">সব কাস্টমার</option>
+                <option value="vip">VIP কাস্টমার</option>
+                <option value="new">নতুন কাস্টমার</option>
+                <option value="inactive">ইনঅ্যাক্টিভ (৩০+ দিন)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>শিরোনাম</label>
+            <input type="text" id="notifTitle" placeholder="যেমন: শীতে ২০% ছাড়!">
+          </div>
+          <div class="form-group">
+            <label>মেসেজ</label>
+            <textarea id="notifMessage" rows="3" placeholder="মেসেজ লিখুন..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="sendNotification()"><i class="fa-solid fa-paper-plane"></i> পাঠান</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2>📜 পাঠানোর ইতিহাস</h2></div>
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>শিরোনাম</th><th>চ্যানেল</th><th>টার্গেট</th><th>প্রাপক</th><th>তারিখ</th></tr></thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  function getHistory() { return AdminStore.get('notification_history', []); }
+  function saveHistory(l) { AdminStore.set('notification_history', l); }
+
+  function getCustomerCount(target) {
+    const customers = AdminStore.get('customers', DEMO_CUSTOMERS);
+    if (target === 'vip') return customers.filter(c => (c.spent || 0) > 5000).length;
+    if (target === 'new') return customers.filter(c => new Date(c.joined) > new Date(Date.now() - 30*24*60*60*1000)).length;
+    if (target === 'inactive') return Math.floor(customers.length * 0.3);
+    return customers.length;
+  }
+
+  function sendNotification() {
+    const title = document.getElementById('notifTitle').value.trim();
+    const message = document.getElementById('notifMessage').value.trim();
+    if (!title || !message) { showToast('শিরোনাম ও মেসেজ দিন', 'error'); return; }
+
+    const channel = document.getElementById('channel').value;
+    const target = document.getElementById('target').value;
+    const count = getCustomerCount(target);
+
+    if (!confirm(`${count} জন কাস্টমারকে পাঠাতে চান?`)) return;
+
+    const history = getHistory();
+    history.unshift({
+      title, message, channel, target, count,
+      date: new Date().toISOString()
+    });
+    saveHistory(history);
+    document.getElementById('notifTitle').value = '';
+    document.getElementById('notifMessage').value = '';
+    renderHistory();
+    showToast(`${count} জনকে নোটিফিকেশন পাঠানো হয়েছে ✅`, 'success');
+  }
+
+  function renderHistory() {
+    const channelLabels = { all: 'সব', sms: 'SMS', email: 'ইমেইল', push: 'পুশ' };
+    const targetLabels = { all: 'সব', vip: 'VIP', new: 'নতুন', inactive: 'ইনঅ্যাক্টিভ' };
+    document.getElementById('historyBody').innerHTML = getHistory().map(h => `
+      <tr>
+        <td><strong>${h.title}</strong><br><small style="color:var(--gray-500)">${h.message}</small></td>
+        <td>${channelLabels[h.channel] || h.channel}</td>
+        <td>${targetLabels[h.target] || h.target}</td>
+        <td><span class="badge badge-active">${h.count} জন</span></td>
+        <td>${new Date(h.date).toLocaleString('bn-BD')}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো ইতিহাস নেই</td></tr>';
+  }
+
+  document.addEventListener('DOMContentLoaded', renderHistory);
+</script>
+</body>
+</html>

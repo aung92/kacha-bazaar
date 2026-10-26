@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কার্ট অ্যাব্যান্ডনমেন্ট — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-title="কার্ট অ্যাব্যান্ডনমেন্ট">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>🛒 কার্ট অ্যাব্যান্ডনমেন্ট</h1>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-info"><h3>মোট অ্যাব্যান্ডন</h3><strong id="statTotal">০</strong></div><div class="stat-icon orange"><i class="fa-solid fa-cart-shopping"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>মোট মূল্য</h3><strong id="statValue">৳০</strong></div><div class="stat-icon green"><i class="fa-solid fa-money-bill"></i></div></div>
+        <div class="stat-card"><div class="stat-info"><h3>রিমাইন্ডার পাঠানো</h3><strong id="statSent">০</strong></div><div class="stat-icon blue"><i class="fa-solid fa-envelope"></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>কাস্টমার</th><th>ফোন</th><th>পণ্য</th><th>মূল্য</th><th>সময়</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+              <tbody id="cartBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+  const DEFAULT_CARTS = [
+    { id: 1, customer: 'রফিক আহমেদ', phone: '01711111111', items: 'মধু, টমেটো', value: 910, time: '2025-01-21T10:00', status: 'pending' },
+    { id: 2, customer: 'সাদিয়া ইসলাম', phone: '01722222222', items: 'কমলা', value: 180, time: '2025-01-20T15:30', status: 'reminded' }
+  ];
+
+  function getCarts() { return AdminStore.get('abandoned_carts', DEFAULT_CARTS); }
+  function saveCarts(l) { AdminStore.set('abandoned_carts', l); }
+
+  function render() {
+    const carts = getCarts();
+    document.getElementById('statTotal').textContent = carts.length;
+    document.getElementById('statValue').textContent = formatTk(carts.reduce((s, c) => s + c.value, 0));
+    document.getElementById('statSent').textContent = carts.filter(c => c.status === 'reminded').length;
+
+    document.getElementById('cartBody').innerHTML = carts.map(c => `
+      <tr>
+        <td><strong>${c.customer}</strong></td>
+        <td>${c.phone}</td>
+        <td>${c.items}</td>
+        <td><strong>${formatTk(c.value)}</strong></td>
+        <td>${new Date(c.time).toLocaleString('bn-BD', { dateStyle: 'short', timeStyle: 'short' })}</td>
+        <td><span class="badge ${c.status === 'reminded' ? 'badge-active' : 'badge-pending'}">${c.status === 'reminded' ? 'রিমাইন্ডার' : 'অপেক্ষমাণ'}</span></td>
+        <td class="actions">
+          ${c.status === 'pending' ? `<button onclick="sendReminder(${c.id})" title="SMS"><i class="fa-solid fa-paper-plane"></i></button>` : ''}
+          <button class="del" onclick="deleteCart(${c.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-500)">কোনো অ্যাব্যান্ডন কার্ট নেই</td></tr>';
+  }
+
+  function sendReminder(id) {
+    const carts = getCarts();
+    const idx = carts.findIndex(c => c.id === id);
+    if (idx < 0) return;
+    carts[idx].status = 'reminded';
+    saveCarts(carts);
+    render();
+    showToast(`${carts[idx].customer}-কে SMS রিমাইন্ডার ✅`, 'success');
+  }
+
+  function deleteCart(id) {
+    if (!confirm('ডিলিট?')) return;
+    saveCarts(getCarts().filter(c => c.id !== id));
+    render();
+    showToast('ডিলিট ✅', 'success');
+  }
+
+  render();
+</script>
+</body>
+</html>

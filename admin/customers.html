@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>কাস্টমার — কাচাবাজার Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .customer-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      font-size: 14px;
+    }
+    .customer-detail-grid small {
+      color: var(--gray-500);
+      display: block;
+      font-size: 12px;
+    }
+    @media(max-width:480px){ .customer-detail-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-title="কাস্টমার">
+
+<div class="admin-wrap">
+  <div id="admin-sidebar"></div>
+  <div class="admin-main">
+    <div id="admin-topbar"></div>
+
+    <div class="admin-content">
+      <div class="page-head">
+        <h1>👥 কাস্টমার</h1>
+        <button class="btn btn-outline" onclick="exportCustomersCSV()">
+          <i class="fa-solid fa-download"></i> CSV
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>মোট কাস্টমার</h3>
+            <strong id="statTotal">০</strong>
+          </div>
+          <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>মোট স্পেন্ট</h3>
+            <strong id="statSpent">৳০</strong>
+          </div>
+          <div class="stat-icon green"><i class="fa-solid fa-money-bill-wave"></i></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>নতুন এই মাসে</h3>
+            <strong id="statNew">০</strong>
+          </div>
+          <div class="stat-icon blue"><i class="fa-solid fa-user-plus"></i></div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 নাম, ফোন বা ইমেইল দিয়ে খুঁজুন...">
+        <select id="sortBy">
+          <option value="newest">নতুন আগে</option>
+          <option value="name">নাম (A-Z)</option>
+          <option value="spent-high">সর্বোচ্চ স্পেন্ট</option>
+          <option value="orders-high">সর্বোচ্চ অর্ডার</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>নাম</th>
+                  <th>ফোন</th>
+                  <th>ইমেইল</th>
+                  <th>যোগদান</th>
+                  <th>অর্ডার</th>
+                  <th>মোট স্পেন্ট</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="customersBody">
+                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-500)">লোড হচ্ছে...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="modalTitle">কাস্টমার বিস্তারিত</h3>
+      <button class="close-modal" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('detailModal')">বন্ধ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin-auth.js"></script>
+<script src="js/admin-layout.js"></script>
+<script>
+  requireAdmin();
+
+  function getCustomers() {
+    return AdminStore.get('customers', DEMO_CUSTOMERS);
+  }
+  function getOrders() {
+    return AdminStore.get('orders', DEMO_ORDERS);
+  }
+
+  function renderStats() {
+    const customers = getCustomers();
+    const total = customers.length;
+    const totalSpent = customers.reduce((s, c) => s + (c.spent || 0), 0);
+    const thisMonth = new Date();
+    const newThisMonth = customers.filter(c => {
+      const d = new Date(c.joined);
+      return d.getMonth() === thisMonth.getMonth() && d.getFullYear() === thisMonth.getFullYear();
+    }).length;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statSpent').textContent = formatTk(totalSpent);
+    document.getElementById('statNew').textContent = newThisMonth;
+  }
+
+  function applyFilters() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    const sort = document.getElementById('sortBy').value;
+
+    let list = getCustomers().slice();
+
+    if (search) {
+      list = list.filter(c =>
+        (c.name || '').toLowerCase().includes(search) ||
+        (c.phone || '').includes(search) ||
+        (c.email || '').toLowerCase().includes(search)
+      );
+    }
+
+    if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'bn'));
+    if (sort === 'spent-high') list.sort((a, b) => (b.spent || 0) - (a.spent || 0));
+    if (sort === 'orders-high') list.sort((a, b) => (b.orders || 0) - (a.orders || 0));
+    if (sort === 'newest') list.sort((a, b) => new Date(b.joined) - new Date(a.joined));
+
+    renderTable(list);
+  }
+
+  function renderTable(list) {
+    const body = document.getElementById('customersBody');
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-500)">কোনো কাস্টমার নেই</td></tr>';
+      return;
+    }
+    body.innerHTML = list.map(c => `
+      <tr>
+        <td><strong>#${c.id}</strong></td>
+        <td>${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${c.email || '—'}</td>
+        <td>${formatDate(c.joined)}</td>
+        <td><span class="badge badge-active">${c.orders || 0}</span></td>
+        <td><strong>${formatTk(c.spent || 0)}</strong></td>
+        <td class="actions">
+          <button onclick="viewDetail(${c.id})" title="দেখুন"><i class="fa-solid fa-eye"></i></button>
+          <button onclick="callCustomer('${c.phone}')" title="কল"><i class="fa-solid fa-phone"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function viewDetail(id) {
+    const c = getCustomers().find(x => x.id === id);
+    if (!c) return;
+    const orders = getOrders().filter(o => o.phone === c.phone);
+
+    document.getElementById('modalTitle').textContent = c.name;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="customer-detail-grid">
+        <div><small>ID</small><strong>#${c.id}</strong></div>
+        <div><small>যোগদান</small><strong>${formatDate(c.joined)}</strong></div>
+        <div><small>ফোন</small><strong>${c.phone}</strong></div>
+        <div><small>ইমেইল</small><strong>${c.email || '—'}</strong></div>
+        <div><small>মোট অর্ডার</small><strong>${c.orders || orders.length}</strong></div>
+        <div><small>মোট স্পেন্ট</small><strong>${formatTk(c.spent || 0)}</strong></div>
+      </div>
+      <div style="margin-top:20px">
+        <h4 style="margin-bottom:10px;font-size:15px">সাম্প্রতিক অর্ডার</h4>
+        ${orders.length ? `
+          <div class="table-wrap">
+            <table class="data-table" style="font-size:13px">
+              <thead><tr><th>ID</th><th>তারিখ</th><th>মোট</th><th>স্ট্যাটাস</th></tr></thead>
+              <tbody>
+                ${orders.slice(0, 5).map(o => `
+                  <tr>
+                    <td><a href="order-detail.html?id=${o.id}" style="color:var(--green-600)"><strong>${o.id}</strong></a></td>
+                    <td>${formatDate(o.date)}</td>
+                    <td>${formatTk(o.total)}</td>
+                    <td>${statusBadge(o.status)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : '<p style="color:var(--gray-500);font-size:13px">কোনো অর্ডার নেই</p>'}
+      </div>
+    `;
+    document.getElementById('detailModal').classList.add('show');
+  }
+
+  function callCustomer(phone) {
+    window.location.href = 'tel:' + phone;
+  }
+
+  function exportCustomersCSV() {
+    const list = getCustomers();
+    const rows = [['ID','Name','Phone','Email','Joined','Orders','Spent']];
+    list.forEach(c => rows.push([c.id, c.name, c.phone, c.email || '', c.joined, c.orders || 0, c.spent || 0]));
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'customers.csv';
+    a.click();
+    showToast('CSV ডাউনলোড ✅', 'success');
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderStats();
+    applyFilters();
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('sortBy').addEventListener('change', applyFilters);
+  });
+</script>
+</body>
+</html>
