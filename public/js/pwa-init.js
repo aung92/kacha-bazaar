@@ -12,7 +12,7 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
+        .register('sw.js', { scope: './' })
         .then((reg) => {
           console.log('✅ SW registered:', reg.scope);
 
@@ -46,7 +46,7 @@
   if (!document.querySelector('link[rel="manifest"]')) {
     const link = document.createElement('link');
     link.rel = 'manifest';
-    link.href = '/manifest.json';
+    link.href = 'manifest.json';
     document.head.appendChild(link);
   }
 
@@ -66,7 +66,7 @@
   if (!document.querySelector('link[rel="apple-touch-icon"]')) {
     const link = document.createElement('link');
     link.rel = 'apple-touch-icon';
-    link.href = '/icons/icon-192.png';
+    link.href = 'icons/icon-192.png';
     document.head.appendChild(link);
   }
 

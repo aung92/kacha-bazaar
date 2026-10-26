@@ -2,8 +2,8 @@
   "name": "কাচাবাজার — তাজা পাহাড়ি পণ্য",
   "short_name": "কাচাবাজার",
   "description": "৩ পার্বত্য জেলা থেকে সরাসরি তাজা সবজি, ফল, মধু ও মসলা",
-  "start_url": "/index.html",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f9fafb",
@@ -36,21 +36,21 @@
       "name": "শপ",
       "short_name": "শপ",
       "description": "সব পণ্য দেখুন",
-      "url": "/shop.html",
+      "url": "shop.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "কার্ট",
       "short_name": "কার্ট",
       "description": "আমার কার্ট",
-      "url": "/cart.html",
+      "url": "cart.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "অ্যাকাউন্ট",
       "short_name": "অ্যাকাউন্ট",
       "description": "আমার অর্ডার",
-      "url": "/account.html",
+      "url": "account.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

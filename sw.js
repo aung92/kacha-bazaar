@@ -3,38 +3,39 @@
 // Version 1.1
 // ============================================
 
-const CACHE_NAME = 'kachabazar-v1.1';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'kachabazar-v1.2';
+const OFFLINE_URL = 'offline.html';
+const siteURL = (path) => new URL(path, self.registration.scope).toString();
 
 // Pre-cache: প্রথম ইনস্টলে সেভ হবে
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/shop.html',
-  '/cart.html',
-  '/checkout.html',
-  '/account.html',
-  '/wishlist.html',
-  '/about.html',
-  '/contact.html',
-  '/districts.html',
-  '/login.html',
-  '/product.html',
-  '/404.html',
-  '/offline.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
-  '/css/variables.css',
-  '/css/style.css',
-  '/js/data.js',
-  '/js/utils.js',
-  '/js/layout.js',
-  '/js/main.js',
-  '/js/shop.js',
-  '/js/product.js',
-  '/js/pwa-init.js',
+  './',
+  'index.html',
+  'shop.html',
+  'cart.html',
+  'checkout.html',
+  'account.html',
+  'wishlist.html',
+  'about.html',
+  'contact.html',
+  'districts.html',
+  'login.html',
+  'product.html',
+  '404.html',
+  'offline.html',
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/icon-maskable-512.png',
+  'css/variables.css',
+  'css/style.css',
+  'js/data.js',
+  'js/utils.js',
+  'js/layout.js',
+  'js/main.js',
+  'js/shop.js',
+  'js/product.js',
+  'js/pwa-init.js',
   'https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
 ];
@@ -49,14 +50,15 @@ self.addEventListener('install', (event) => {
       // একটি একটি করে ক্যাশ (একটি fail হলেও অন্যগুলো কাজ করবে)
       for (const url of PRECACHE_ASSETS) {
         try {
-          await cache.add(new Request(url, { cache: 'reload' }));
+          const assetURL = url.startsWith('http') ? url : siteURL(url);
+          await cache.add(new Request(assetURL, { cache: 'reload' }));
         } catch (e) {
           console.warn('Precache failed:', url);
         }
       }
       // অফলাইন পেজ নিশ্চিত
       try {
-        await cache.add(OFFLINE_URL);
+        await cache.add(siteURL(OFFLINE_URL));
       } catch {}
       // সাথে সাথে activate
       await self.skipWaiting();
@@ -109,7 +111,7 @@ self.addEventListener('fetch', (event) => {
         } catch {
           const cached = await caches.match(req);
           if (cached) return cached;
-          const offline = await caches.match(OFFLINE_URL);
+          const offline = await caches.match(siteURL(OFFLINE_URL));
           return offline || new Response('অফলাইন', { status: 503 });
         }
       })()
